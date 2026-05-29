@@ -92,6 +92,25 @@ export function getBaseXpForMode(mode: 'daily' | 'practice'): number {
   return mode === 'daily' ? 100 : 50
 }
 
+export function getDailySolveSpeedXpBonus(wrongGuesses: number): number {
+  if (wrongGuesses <= 0) {
+    return 120
+  }
+  if (wrongGuesses === 1) {
+    return 95
+  }
+  if (wrongGuesses === 2) {
+    return 70
+  }
+  if (wrongGuesses === 3) {
+    return 45
+  }
+  if (wrongGuesses === 4) {
+    return 20
+  }
+  return 0
+}
+
 export function getCompletionRewards(input: {
   mode: 'daily' | 'practice'
   solved: boolean

@@ -30,27 +30,206 @@ const roleContexts: RoleContext[] = [
   { minAge: 55, maxAge: 85, role: 'adulto mais velho', setting: 'na reorganizacao de habitos diarios' },
 ]
 
-const names = [
-  'Marina',
-  'Joao',
-  'Rafaela',
-  'Thiago',
-  'Camila',
-  'Henrique',
-  'Sonia',
-  'Lucas',
-  'Ana',
-  'Pedro',
-  'Livia',
-  'Gabriel',
-  'Nina',
-  'Eduardo',
-  'Bruna',
-  'Carlos',
-  'Renata',
-  'Vitor',
+const firstNames = [
+  'Alice',
+  'Aline',
   'Amanda',
+  'Ana',
+  'Ana Beatriz',
+  'Ana Clara',
+  'Ana Julia',
+  'Andressa',
+  'Arthur',
+  'Augusto',
+  'Barbara',
+  'Beatriz',
+  'Bianca',
+  'Brenda',
+  'Bruna',
+  'Bruno',
+  'Caio',
+  'Camila',
+  'Carla',
+  'Carlos',
+  'Carolina',
+  'Catarina',
+  'Cecilia',
+  'Cesar',
+  'Clara',
+  'Clarice',
+  'Cristiane',
+  'Daniel',
+  'Daniela',
+  'Danilo',
+  'Davi',
+  'Debora',
+  'Diego',
+  'Douglas',
+  'Eduarda',
+  'Eduardo',
+  'Elaine',
+  'Elisa',
+  'Eloisa',
+  'Enzo',
+  'Erica',
+  'Estevao',
+  'Evelyn',
+  'Fabiana',
+  'Fabio',
   'Felipe',
+  'Fernanda',
+  'Fernando',
+  'Flavia',
+  'Francisco',
+  'Gabriel',
+  'Gabriela',
+  'Giovana',
+  'Gisele',
+  'Guilherme',
+  'Gustavo',
+  'Helena',
+  'Henrique',
+  'Hugo',
+  'Ian',
+  'Igor',
+  'Iris',
+  'Isabela',
+  'Isadora',
+  'Joana',
+  'Joao',
+  'Joaquim',
+  'Jorge',
+  'Jose',
+  'Juliana',
+  'Julio',
+  'Karen',
+  'Karina',
+  'Katia',
+  'Kaua',
+  'Lais',
+  'Lara',
+  'Larissa',
+  'Laura',
+  'Leticia',
+  'Livia',
+  'Lorena',
+  'Luana',
+  'Lucas',
+  'Luciana',
+  'Lucia',
+  'Luis',
+  'Luiza',
+  'Marcela',
+  'Marcelo',
+  'Marcia',
+  'Marcos',
+  'Maria',
+  'Maria Clara',
+  'Mariana',
+  'Marina',
+  'Marta',
+  'Matheus',
+  'Melissa',
+  'Micaela',
+  'Miguel',
+  'Milena',
+  'Murilo',
+  'Nadia',
+  'Natalia',
+  'Nicolas',
+  'Nina',
+  'Otavio',
+  'Paola',
+  'Patricia',
+  'Paulo',
+  'Pedro',
+  'Priscila',
+  'Rafaela',
+  'Rafael',
+  'Raissa',
+  'Renan',
+  'Renata',
+  'Ricardo',
+  'Roberta',
+  'Rodrigo',
+  'Rosana',
+  'Samuel',
+  'Sabrina',
+  'Sofia',
+  'Sonia',
+  'Tainara',
+  'Talita',
+  'Tamara',
+  'Tatiane',
+  'Teresa',
+  'Thiago',
+  'Vanessa',
+  'Veronica',
+  'Vicente',
+  'Vitoria',
+  'Vitor',
+  'William',
+  'Yasmin',
+]
+
+const lastNames = [
+  'Almeida',
+  'Alves',
+  'Andrade',
+  'Araujo',
+  'Barbosa',
+  'Barros',
+  'Batista',
+  'Borges',
+  'Campos',
+  'Cardoso',
+  'Carvalho',
+  'Castro',
+  'Cavalcante',
+  'Correia',
+  'Costa',
+  'Cruz',
+  'Dias',
+  'Domingues',
+  'Duarte',
+  'Esteves',
+  'Farias',
+  'Fernandes',
+  'Ferreira',
+  'Freitas',
+  'Gomes',
+  'Goncalves',
+  'Lima',
+  'Lopes',
+  'Machado',
+  'Macedo',
+  'Matos',
+  'Medeiros',
+  'Melo',
+  'Mendes',
+  'Monteiro',
+  'Moraes',
+  'Moreira',
+  'Nascimento',
+  'Nogueira',
+  'Novaes',
+  'Oliveira',
+  'Pacheco',
+  'Peixoto',
+  'Pereira',
+  'Ramos',
+  'Rezende',
+  'Ribeiro',
+  'Rocha',
+  'Rodrigues',
+  'Santana',
+  'Santos',
+  'Silva',
+  'Siqueira',
+  'Soares',
+  'Sousa',
+  'Teixeira',
+  'Vieira',
 ]
 
 const stressors = [
@@ -71,6 +250,81 @@ const functionalImpacts = [
   'evitacao de situacoes antes manejaveis',
   'dificuldade de manter foco por longos periodos',
 ]
+
+const behavioralSnapshotsByDifficulty: Record<Difficulty, string[]> = {
+  easy: [
+    'passou a adiar tarefas simples que antes eram feitas sem esforco',
+    'tem levado mais tempo para iniciar compromissos do dia',
+    'relata oscilacao objetiva de desempenho entre dias consecutivos',
+    'observa dificuldade pratica para manter rotina de estudos ou trabalho',
+  ],
+  medium: [
+    'alterna periodos curtos de compensacao com recaidas funcionais',
+    'descreve tentativas de controle que aliviam apenas no curto prazo',
+    'mantem esforco elevado, mas com desgaste progressivo ao longo da semana',
+    'apresenta variacao de desempenho conforme gatilhos contextuais',
+  ],
+  hard: [
+    'o funcionamento oscila em ciclos de organizacao parcial seguidos de descompensacao',
+    'a regulacao emocional e cognitiva parece depender de alto custo de autocontrole',
+    'o padrao se manifesta como processo de manutencao, nao apenas como eventos isolados',
+    'ha ruptura gradual entre intencao, execucao e avaliacao das proprias condutas',
+  ],
+}
+
+const internalLayersByDifficulty: Record<Difficulty, string[]> = {
+  easy: [
+    'com desconforto percebido de forma clara pela propria pessoa',
+    'com sofrimento subjetivo descrito de maneira objetiva',
+    'com consciencia de que o quadro ja afeta mais de uma area da vida',
+  ],
+  medium: [
+    'com ambivalencia entre reconhecer prejuizo e tentar normalizar os sinais',
+    'com sensacao de perda progressiva de previsibilidade na rotina',
+    'com aumento de autovigilancia e reducao de flexibilidade emocional',
+  ],
+  hard: [
+    'com tensao entre necessidade de controle e enfraquecimento da autorregulacao',
+    'com leitura interna marcada por rigidez interpretativa e fadiga adaptativa',
+    'com dinamica de manutencao que combina vulnerabilidade, evitacao e sobrecompensacao',
+  ],
+}
+
+const abstractionLensesByDifficulty: Record<Difficulty, string[]> = {
+  easy: [
+    'o quadro aparece como sequencia de sinais concretos no cotidiano',
+    'os indicios surgem de forma observavel em tarefas e relacoes',
+    'a mudanca funcional pode ser vista em comportamentos especificos',
+  ],
+  medium: [
+    'o caso sugere um padrao em camadas, com fatores internos e contextuais',
+    'os sinais se organizam em ciclo de ativacao, alivio breve e nova piora',
+    'a narrativa aponta para interacao entre gatilho externo e vulnerabilidade basal',
+  ],
+  hard: [
+    'o caso se apresenta mais como dinamica processual do que como lista de sintomas',
+    'a leitura exige integrar temporalidade, funcionamento e mecanismos de manutencao',
+    'o nucleo clinico emerge da relacao entre contexto, autorregulacao e significado subjetivo',
+  ],
+}
+
+const inferencePromptsByDifficulty: Record<Difficulty, string[]> = {
+  easy: [
+    'identifique quais sinais sao nucleares e quais sao secundarios',
+    'compare os dados com hipoteses mais prevalentes da mesma categoria',
+    'diferencie sofrimento situacional de padrao clinico persistente',
+  ],
+  medium: [
+    'avalie se o padrao e melhor explicado por eixo primario ou por comorbidade',
+    'considere como os comportamentos de enfrentamento mantem o ciclo atual',
+    'teste hipoteses diferenciais com foco em curso temporal e impacto funcional',
+  ],
+  hard: [
+    'priorize formulacao de mecanismo, nao apenas correspondencia por checklist',
+    'analise a coerencia entre fenomenologia, cronologia e prejuizo estrutural',
+    'revise diferenciais proximos a partir de padroes de manutencao e nao de sinais isolados',
+  ],
+}
 
 const categorySignals: Partial<Record<string, string[]>> = {
   Humor: ['oscilacao afetiva', 'queda de energia', 'perda de interesse'],
@@ -198,6 +452,14 @@ function pickManyUnique<T>(list: T[], amount: number, rng: () => number): T[] {
   return output
 }
 
+function buildPersonName(rng: () => number): string {
+  const firstName = pickOne(firstNames, rng)
+  const maybeSecondName = rng() < 0.22 ? ` ${pickOne(firstNames, rng)}` : ''
+  const lastName = pickOne(lastNames, rng)
+  const maybeSecondLastName = rng() < 0.55 ? ` ${pickOne(lastNames, rng)}` : ''
+  return `${firstName}${maybeSecondName} ${lastName}${maybeSecondLastName}`
+}
+
 function chooseDisorder(rng: () => number, filters: GenerationFilters): Disorder {
   const exactFiltered = disorders.filter((disorder) => {
     const matchesCategory = !filters.category || disorder.category === filters.category
@@ -228,6 +490,23 @@ function chooseDisorder(rng: () => number, filters: GenerationFilters): Disorder
 
 function normalizeToken(token: string): string {
   return removeAccents(token.toLowerCase()).replace(/[^a-z0-9]/g, '')
+}
+
+function uniqueValues<T>(list: T[]): T[] {
+  return [...new Set(list)]
+}
+
+function formatNaturalList(values: string[]): string {
+  if (!values.length) {
+    return ''
+  }
+  if (values.length === 1) {
+    return values[0]
+  }
+  if (values.length === 2) {
+    return `${values[0]} e ${values[1]}`
+  }
+  return `${values.slice(0, -1).join(', ')} e ${values.at(-1)}`
 }
 
 function extractKeywords(text: string, limit: number): string[] {
@@ -312,6 +591,30 @@ function buildTitle(disorder: Disorder, age: number, roleContext: RoleContext, r
   return `${pickOne(starters, rng)}: ${focusText} (${age} anos, ${roleContext.setting})`
 }
 
+function selectKeywordFocus(disorder: Disorder, rng: () => number): {
+  broadFocus: string
+  compressedFocus: string
+} {
+  const fromSummary = extractKeywords(disorder.shortSummary, 5)
+  const fromStudy = extractKeywords(disorder.studyNote, 5)
+  const combined = uniqueValues([...fromSummary, ...fromStudy])
+
+  if (!combined.length) {
+    return {
+      broadFocus: disorder.category.toLowerCase(),
+      compressedFocus: disorder.category.toLowerCase(),
+    }
+  }
+
+  const broad = formatNaturalList(pickManyUnique(combined, Math.min(3, combined.length), rng))
+  const compact = formatNaturalList(pickManyUnique(combined, Math.min(2, combined.length), rng))
+
+  return {
+    broadFocus: broad || disorder.category.toLowerCase(),
+    compressedFocus: compact || disorder.category.toLowerCase(),
+  }
+}
+
 function buildVignette(input: {
   disorder: Disorder
   name: string
@@ -319,11 +622,26 @@ function buildVignette(input: {
   roleContext: RoleContext
   rng: () => number
 }): string {
+  const difficulty = input.disorder.difficulty
   const summary = input.disorder.shortSummary.replace(/\.$/, '').toLowerCase()
   const stressor = pickOne(stressors, input.rng)
   const signal = pickOne(categorySignals[input.disorder.category] ?? ['sofrimento emocional recorrente'], input.rng)
+  const behaviorSnapshot = pickOne(behavioralSnapshotsByDifficulty[difficulty], input.rng)
+  const internalLayer = pickOne(internalLayersByDifficulty[difficulty], input.rng)
+  const abstractionLens = pickOne(abstractionLensesByDifficulty[difficulty], input.rng)
+  const timeline = buildTimeline(difficulty, input.rng)
+  const progression = buildProgression(difficulty, input.rng)
+  const keywordFocus = selectKeywordFocus(input.disorder, input.rng)
 
-  return `${input.name}, ${input.age} anos, ${input.roleContext.role}, relata ${summary} ${input.roleContext.setting}. Nos ultimos meses, o relato se intensificou ${stressor}, com destaque para ${signal}.`
+  if (difficulty === 'easy') {
+    return `${input.name}, ${input.age} anos, ${input.roleContext.role}, relata ${summary} ${input.roleContext.setting}. Nos ultimos meses, houve intensificacao ${stressor}, com destaque para ${signal}. De forma pratica, ${behaviorSnapshot} ${internalLayer}. Na cronologia, ${timeline}, ${progression}.`
+  }
+
+  if (difficulty === 'medium') {
+    return `${input.name}, ${input.age} anos, ${input.roleContext.role}, descreve ${summary} ${input.roleContext.setting}. O relato se intensificou ${stressor}, e ${behaviorSnapshot}. ${abstractionLens}, combinando ${signal} e marcadores como ${keywordFocus.compressedFocus}. Em termos de curso, ${timeline}, ${progression}, com prejuizo progressivo na organizacao cotidiana.`
+  }
+
+  return `${input.name}, ${input.age} anos, ${input.roleContext.role}, apresenta narrativa de ${summary} ${input.roleContext.setting}. Em vez de apenas episodios pontuais, o quadro se adensa ${stressor}, enquanto ${behaviorSnapshot}. ${abstractionLens}, articulando ${signal} com eixos de ${keywordFocus.broadFocus}. Na leitura longitudinal, ${timeline}, ${progression}, sugerindo desajuste crescente entre autorregulacao, vinculos e desempenho funcional.`
 }
 
 function createClues(input: {
@@ -332,22 +650,40 @@ function createClues(input: {
   roleContext: RoleContext
   rng: () => number
 }): CaseClue[] {
+  const difficulty = input.disorder.difficulty
   const summary = input.disorder.shortSummary.replace(/\.$/, '')
-  const noteKeywords = extractKeywords(input.disorder.studyNote, 4)
-  const summaryKeywords = extractKeywords(input.disorder.shortSummary, 4)
   const categoryHint = pickOne(categorySignals[input.disorder.category] ?? ['impacto funcional progressivo'], input.rng)
   const timeline = buildTimeline(input.disorder.difficulty, input.rng)
   const progression = buildProgression(input.disorder.difficulty, input.rng)
-  const impacts = pickManyUnique(functionalImpacts, 2, input.rng)
-  const noteHint = noteKeywords.length > 0 ? noteKeywords.join(', ') : input.disorder.category.toLowerCase()
-  const focusHint = summaryKeywords.length > 0 ? summaryKeywords.join(', ') : summary.toLowerCase()
+  const impacts = pickManyUnique(functionalImpacts, 3, input.rng)
+  const behaviorSnapshot = pickOne(behavioralSnapshotsByDifficulty[difficulty], input.rng)
+  const internalLayer = pickOne(internalLayersByDifficulty[difficulty], input.rng)
+  const abstractionLens = pickOne(abstractionLensesByDifficulty[difficulty], input.rng)
+  const inferencePrompt = pickOne(inferencePromptsByDifficulty[difficulty], input.rng)
+  const keywordFocus = selectKeywordFocus(input.disorder, input.rng)
 
-  const clueTexts = [
-    `Relato principal: ${summary}. O desconforto fica mais evidente ${input.roleContext.setting}.`,
-    `Sinais observados: ${categoryHint}. Termos-chave recorrentes no relato: ${focusHint}.`,
-    `Cronologia: ${timeline}, ${progression}.`,
-    `Impacto funcional: ${impacts[0] ?? 'queda de desempenho'} e ${impacts[1] ?? 'evitacao social'}. Ponto para estudo diferencial: ${noteHint}.`,
-  ]
+  const clueTextsByDifficulty: Record<Difficulty, string[]> = {
+    easy: [
+      `Relato principal: ${summary}. O desconforto fica mais evidente ${input.roleContext.setting}, e ${behaviorSnapshot}.`,
+      `Sinais observados: ${categoryHint}. O relato explicita marcadores como ${keywordFocus.broadFocus}, ${internalLayer}.`,
+      `Cronologia: ${timeline}, ${progression}. O curso indica continuidade clinica, nao apenas variacao breve.`,
+      `Impacto funcional: ${impacts[0] ?? 'queda de desempenho'}, ${impacts[1] ?? 'evitacao social'} e ${impacts[2] ?? 'atraso de compromissos'}. Direcao de estudo: ${inferencePrompt}.`,
+    ],
+    medium: [
+      `Nucleo do relato: ${summary}. No cotidiano ${input.roleContext.setting}, ${behaviorSnapshot}, ${internalLayer}.`,
+      `Configuracao sintomatica: ${categoryHint}. Em camadas, aparecem eixos de ${keywordFocus.compressedFocus}, com oscilacao entre controle e piora.`,
+      `Temporalidade: ${timeline}, ${progression}. O padrao retorna mesmo apos estrategias espontaneas de compensacao.`,
+      `Prejuizo: ${impacts[0] ?? 'queda de desempenho'} e ${impacts[1] ?? 'evitacao social'}, com extensao para ${impacts[2] ?? 'sono irregular'}. Pergunta critica: ${inferencePrompt}.`,
+    ],
+    hard: [
+      `Fenomenologia inicial: ${summary}. Em contexto ${input.roleContext.setting}, ${behaviorSnapshot}, ${internalLayer}.`,
+      `Leitura processual: ${abstractionLens}. O material aponta para interacao entre ${categoryHint} e vetores de ${keywordFocus.compressedFocus}.`,
+      `Curso longitudinal: ${timeline}, ${progression}. A repeticao do ciclo sugere mecanismo de manutencao em vez de resposta aguda simples.`,
+      `Estrutura de prejuizo: ${impacts[0] ?? 'queda de desempenho'}, ${impacts[1] ?? 'evitacao social'} e ${impacts[2] ?? 'desorganizacao de rotina'}. Foco para raciocinio diferencial: ${inferencePrompt}.`,
+    ],
+  }
+
+  const clueTexts = clueTextsByDifficulty[difficulty]
 
   return clueTexts.map((text, index) => ({
     id: `${input.caseId}-clue-${index + 1}`,
@@ -381,7 +717,7 @@ function buildProceduralCase(input: GenerateProceduralCaseInput): Case {
   const disorder = chooseDisorder(rng, input)
   const age = buildAge(rng)
   const roleContext = chooseRoleContext(age, rng)
-  const name = pickOne(names, rng)
+  const name = buildPersonName(rng)
   const caseId = `${input.caseIdPrefix}-${disorder.id}-${hashSeed(input.seed).toString(36)}`
 
   return {
