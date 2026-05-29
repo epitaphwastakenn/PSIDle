@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react'
-import { approvedCases } from '../data/cases'
 import { disorders } from '../data/disorders'
 import { GameSession } from '../components/game/GameSession'
-import { getDailyCaseForDate, getTodayKey } from '../lib/daily'
+import { getTodayKey } from '../lib/daily'
+import { generateDailyProceduralCase } from '../lib/proceduralCases'
 import { getUserProgress } from '../lib/storage'
 import type { Attempt } from '../types/models'
 
 export function DailyPage() {
   const [, setProgressVersion] = useState(0)
   const todayKey = getTodayKey()
-  const dailyCase = useMemo(() => getDailyCaseForDate(new Date(), approvedCases), [])
+  const dailyCase = generateDailyProceduralCase(new Date())
   const progress = getUserProgress()
 
   const latestDailyAttempt = useMemo(() => {

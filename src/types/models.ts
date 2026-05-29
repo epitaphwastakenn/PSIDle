@@ -55,6 +55,8 @@ export interface Attempt {
   solved: boolean
   score: number
   cluesUsed: number
+  caseCategory?: string
+  caseDifficulty?: Difficulty
 }
 
 export interface UserProgress {
@@ -91,6 +93,7 @@ export interface ReviewItem {
   caseId: string
   correctDisorderId: string
   guessedDisorderId?: string
+  caseSnapshot?: Case
   createdAt: string
   dueAt: string
   interval: number

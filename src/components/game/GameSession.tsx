@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { cases } from '../../data/cases'
 import { disorders } from '../../data/disorders'
 import type { Attempt, Case } from '../../types/models'
 import { applyAchievementUnlocks } from '../../lib/achievementEngine'
@@ -104,6 +103,8 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       solved: didSolve,
       score: scoreResult.score,
       cluesUsed: finalCluesUsed,
+      caseCategory: caseData.category,
+      caseDifficulty: caseData.difficulty,
     }
 
     let progress = getUserProgress()
@@ -135,6 +136,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
         caseId: caseData.id,
         correctDisorderId: caseData.correctDisorderId,
         guessedDisorderId,
+        caseSnapshot: caseData,
       })
       saveReviewItems(reviewItems)
       setReviewAdded(true)
@@ -226,6 +228,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     const reviewItems = addReviewItem(getReviewItems(), {
       caseId: caseData.id,
       correctDisorderId: caseData.correctDisorderId,
+      caseSnapshot: caseData,
     })
     saveReviewItems(reviewItems)
     setReviewAdded(true)
@@ -253,7 +256,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     pushToast('+20 XP por revisar a explicação.')
   }
 
-  if (!correctDisorder || !cases.length) {
+  if (!correctDisorder) {
     return (
       <section className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         Não foi possível carregar o caso.

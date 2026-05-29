@@ -19,15 +19,18 @@ function buildStats(progress: UserProgress, reviewItems: ReviewItem[]): Progress
   const practiceSolved = progress.attempts.filter((attempt) => attempt.mode === 'practice' && attempt.solved).length
   const perfectScores = progress.attempts.filter((attempt) => attempt.solved && attempt.score === 100).length
 
-  const hardSolvedCaseIds = new Set(
-    progress.attempts
-      .filter((attempt) => attempt.solved && attempt.caseId.includes('case-00'))
-      .map((attempt) => attempt.caseId),
-  )
+  const legacyHardCaseIds = new Set(['case-005', 'case-007', 'case-009'])
+  const hardSolved = progress.attempts.filter((attempt) => {
+    if (!attempt.solved) {
+      return false
+    }
 
-  // Hard solved is approximated by case ids ending in known hard cases.
-  const hardCaseIds = new Set(['case-005', 'case-007', 'case-009'])
-  const hardSolved = Array.from(hardSolvedCaseIds).filter((id) => hardCaseIds.has(id)).length
+    if (attempt.caseDifficulty) {
+      return attempt.caseDifficulty === 'hard'
+    }
+
+    return legacyHardCaseIds.has(attempt.caseId)
+  }).length
 
   const reviewedCount = reviewItems.filter((item) => item.interval > 1 || item.status === 'mastered').length
   const accuracy = totalAttempts > 0 ? solvedAttempts / totalAttempts : 0

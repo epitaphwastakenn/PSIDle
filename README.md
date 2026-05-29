@@ -1,20 +1,18 @@
 # PsiDle
 
-Jogo estático de estudo em psicologia/psicopatologia, inspirado em dinâmicas estilo Wordle, com identidade própria em português brasileiro.
+Jogo estatico de estudo em psicologia/psicopatologia, em portugues brasileiro, com casos clinicos ficticios.
 
-O usuário recebe um caso clínico **fictício** e tenta identificar o transtorno mais provável para fins de estudo.
+## Aviso de seguranca
 
-## Aviso importante
+Este projeto e educacional e de entretenimento.
 
-Este projeto é educacional e de entretenimento.
+Nao e ferramenta diagnostica, nao e aconselhamento medico e nao deve ser usado para decisao clinica real.
 
-**Não é ferramenta diagnóstica, não é aconselhamento médico e não deve ser usado para decisão clínica real.**
-
-Disclaimer exibido no app:
+Disclaimer no app:
 
 > "Este site é uma ferramenta educacional para estudo de psicologia e psicopatologia. Os casos são fictícios e não devem ser usados para diagnóstico, tratamento ou tomada de decisão clínica. Em caso de sofrimento psicológico, procure um profissional qualificado."
 
-Rodapé:
+Rodape:
 
 > "Conteúdo educacional. Não é diagnóstico clínico."
 
@@ -24,15 +22,15 @@ Rodapé:
 - React
 - TypeScript
 - Tailwind CSS
-- React Router
-- localStorage (persistência)
+- React Router (HashRouter para GitHub Pages)
+- localStorage
 - GitHub Actions (deploy no GitHub Pages)
 
-## Por que não há backend
+## Sem backend
 
-O projeto foi desenhado para GitHub Pages, então toda a aplicação é entregue como HTML/CSS/JS estático.
+Projeto feito para hospedagem estatica no GitHub Pages (HTML/CSS/JS apos build).
 
-Por isso, **não usa**:
+Nao usa:
 
 - API server
 - SSR
@@ -40,14 +38,7 @@ Por isso, **não usa**:
 - Prisma/Supabase
 - chaves secretas no frontend
 
-## Instalação
-
-Pré-requisitos:
-
-- Node.js 22+
-- npm 10+
-
-Comandos:
+## Instalar
 
 ```bash
 npm install
@@ -59,13 +50,13 @@ npm install
 npm run dev
 ```
 
-## Build de produção
+## Build
 
 ```bash
 npm run build
 ```
 
-Pré-visualização local do build:
+Preview do build:
 
 ```bash
 npm run preview
@@ -73,73 +64,55 @@ npm run preview
 
 ## Deploy no GitHub Pages
 
-O workflow já está em:
+Workflow:
 
 - `.github/workflows/deploy.yml`
 
-Fluxo:
+Passos:
 
-1. `checkout`
-2. `setup-node`
-3. `npm ci`
-4. `npm run build`
-5. copia `dist/index.html` para `dist/404.html` (fallback SPA)
-6. upload de artifact
-7. deploy para Pages
+1. Commit e push para `main` ou `master`.
+2. No GitHub: `Settings -> Pages -> Source: GitHub Actions`.
+3. Aguarde o workflow `Deploy to GitHub Pages`.
 
-### Configuração necessária no GitHub
+## Sobre rotas e base path
 
-1. Repositório no GitHub.
-2. Abrir `Settings` → `Pages`.
-3. Em **Build and deployment**, selecionar **Source: GitHub Actions**.
-4. Fazer push para `main` (ou `master`).
-5. Aguardar workflow `Deploy to GitHub Pages`.
+- O projeto usa `HashRouter` para evitar problema de rota em host estatico.
+- O `vite.config.ts` usa `base: './'` para funcionar bem em subpasta de repositorio.
 
-### Base path no Vite
+## Dados estaticos
 
-`vite.config.ts` está configurado para:
-
-- em GitHub Actions: `/${nome-do-repo}/`
-- local: `/`
-
-Se você usar site de usuário/organização na raiz, pode fixar `base: '/'`.
-
-## Como os dados estáticos funcionam
-
-Arquivos de dados:
+Arquivos:
 
 - `src/data/disorders.ts`
 - `src/data/cases.ts`
 - `src/data/tasks.ts`
 - `src/data/achievements.ts`
 
-Tudo é TypeScript estático (mock/manual), sem fetch de backend.
+Tudo e TypeScript estatico/manual, sem fetch de backend.
 
-## Estrutura de gameplay (v1)
+## Geracao procedural de casos
 
-- Caso diário determinístico por data (client-side)
-- Modo treino com filtros por categoria/dificuldade
-- Pistas progressivas
-- Palpite com aliases e normalização (minúsculas, trim, sem acento)
-- Pontuação
-- XP/moedas/nível/streak
-- Tarefas diárias
-- Revisão com repetição espaçada simples
-- Perfil com estatísticas e conquistas
+- Caso diario: gerado proceduralmente de forma deterministica por data.
+- Modo treino: gera casos ficticios proceduralmente a cada clique, com filtros por categoria e dificuldade.
+- A idade e sorteada com coerencia de contexto (escola, faculdade, trabalho, etc.), conforme etapa de vida.
 
-## Persistência local
+Implementacao:
 
-Persistência via `localStorage` com chaves versionadas:
+- `src/lib/proceduralCases.ts`
+
+## Persistencia local
+
+Chaves versionadas:
 
 - `psidle:v1:progress`
 - `psidle:v1:tasks`
 - `psidle:v1:review`
 
-Há tratamento para dados ausentes/corrompidos.
+Com tratamento de dados ausentes/corrompidos.
 
 ## Adicionar novos transtornos
 
-Edite `src/data/disorders.ts` adicionando objetos `Disorder`:
+Edite `src/data/disorders.ts` com objetos `Disorder`:
 
 - `id`
 - `namePt`
@@ -149,7 +122,7 @@ Edite `src/data/disorders.ts` adicionando objetos `Disorder`:
 - `studyNote`
 - `difficulty`
 
-## Adicionar novos casos
+## Adicionar novos casos manuais
 
 Edite `src/data/cases.ts` com objetos `Case`:
 
@@ -161,17 +134,15 @@ Edite `src/data/cases.ts` com objetos `Case`:
 - `differentials`
 - `status: "approved"`
 
-Use apenas casos fictícios e texto autoral/parafraseado.
+## Limites de conteudo e copyright
 
-## Limites de conteúdo e copyright
+- Nao incluir PDF no repositorio.
+- Nao colocar DSM PDF em `/public`.
+- Nao copiar texto extenso de manual diagnostico protegido por copyright.
+- Nao expor criterios integrais protegidos por copyright.
+- Nao usar o app para diagnostico real.
+- Nao recomendar medicacao/tratamento.
 
-- Não incluir PDF no repositório.
-- Não colocar DSM PDF em `/public`.
-- Não copiar texto extenso de manual diagnóstico.
-- Não expor critérios integrais protegidos por copyright.
-- Não usar conteúdo para diagnóstico real.
-- Não recomendar medicação/tratamento.
-
-## Licença e uso
+## Licenca e uso
 
 Projeto para estudo pessoal e entretenimento educacional.

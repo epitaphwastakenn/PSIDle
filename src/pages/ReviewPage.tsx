@@ -15,6 +15,7 @@ import {
   saveUserProgress,
 } from '../lib/storage'
 import { generateDailyTasks, updateTaskProgress } from '../lib/taskEngine'
+import type { Case } from '../types/models'
 
 export function ReviewPage() {
   const [items, setItems] = useState(() => getReviewItems())
@@ -24,7 +25,9 @@ export function ReviewPage() {
   const dueItems = useMemo(() => getDueReviewItems(items), [items])
   const currentItem = dueItems[0]
 
-  const currentCase = currentItem ? approvedCases.find((item) => item.id === currentItem.caseId) : undefined
+  const currentCase: Case | undefined = currentItem
+    ? approvedCases.find((item) => item.id === currentItem.caseId) ?? currentItem.caseSnapshot
+    : undefined
   const correctDisorder = currentItem
     ? disorders.find((disorder) => disorder.id === currentItem.correctDisorderId)
     : undefined

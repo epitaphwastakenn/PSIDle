@@ -1,9 +1,10 @@
-import type { ReviewItem } from '../types/models'
+import type { Case, ReviewItem } from '../types/models'
 
 interface AddReviewInput {
   caseId: string
   correctDisorderId: string
   guessedDisorderId?: string
+  caseSnapshot?: Case
   now?: Date
 }
 
@@ -36,6 +37,7 @@ export function addReviewItem(items: ReviewItem[], input: AddReviewInput): Revie
       return {
         ...item,
         guessedDisorderId: input.guessedDisorderId,
+        caseSnapshot: input.caseSnapshot ?? item.caseSnapshot,
         dueAt: addDays(now, 1).toISOString(),
         interval: 1,
         ease: Math.max(1.3, item.ease - 0.1),
@@ -49,6 +51,7 @@ export function addReviewItem(items: ReviewItem[], input: AddReviewInput): Revie
     caseId: input.caseId,
     correctDisorderId: input.correctDisorderId,
     guessedDisorderId: input.guessedDisorderId,
+    caseSnapshot: input.caseSnapshot,
     createdAt: now.toISOString(),
     dueAt: addDays(now, 1).toISOString(),
     interval: 1,

@@ -1,69 +1,46 @@
 import { useMemo, useState } from 'react'
-import { approvedCases } from '../data/cases'
+import { disorderCategories } from '../data/disorders'
 import { GameSession } from '../components/game/GameSession'
+import { generatePracticeProceduralCase } from '../lib/proceduralCases'
 import type { Case, Difficulty } from '../types/models'
 
 type DifficultyFilter = Difficulty | 'all'
 
-function randomFromList<T>(list: T[]): T | null {
-  if (!list.length) {
-    return null
-  }
-  const index = Math.floor(Math.random() * list.length)
-  return list[index]
+function buildSeed(): string {
+  return `practice-${Date.now()}-${Math.random()}`
 }
 
 export function PracticePage() {
-  const categories = useMemo(() => Array.from(new Set(approvedCases.map((item) => item.category))), [])
+  const categories = useMemo(() => disorderCategories, [])
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all')
+  const [selectedCase, setSelectedCase] = useState<Case>(() =>
+    generatePracticeProceduralCase({
+      seed: buildSeed(),
+    }),
+  )
 
-  const filteredCases = useMemo(() => {
-    return approvedCases.filter((item) => {
-      const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
-      const matchesDifficulty = difficultyFilter === 'all' || item.difficulty === difficultyFilter
-      return matchesCategory && matchesDifficulty
+  function generateCaseWithFilters(seed: string): Case {
+    return generatePracticeProceduralCase({
+      seed,
+      category: categoryFilter === 'all' ? undefined : categoryFilter,
+      difficulty: difficultyFilter === 'all' ? undefined : difficultyFilter,
     })
-  }, [categoryFilter, difficultyFilter])
-
-  const [selectedCase, setSelectedCase] = useState<Case | null>(() => randomFromList(approvedCases))
+  }
 
   function pickRandomCase() {
-    if (!filteredCases.length) {
-      setSelectedCase(null)
-      return
-    }
-
-    if (filteredCases.length === 1) {
-      setSelectedCase(filteredCases[0])
-      return
-    }
-
-    const next = randomFromList(filteredCases)
-    if (!next) {
-      setSelectedCase(null)
-      return
-    }
-
-    if (next.id === selectedCase?.id) {
-      const fallback = filteredCases.find((item) => item.id !== selectedCase.id) ?? next
-      setSelectedCase(fallback)
-      return
-    }
-
-    setSelectedCase(next)
+    setSelectedCase(generateCaseWithFilters(buildSeed()))
   }
 
   function applyFilters() {
-    const next = randomFromList(filteredCases)
-    setSelectedCase(next)
+    setSelectedCase(generateCaseWithFilters(buildSeed()))
   }
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="font-title text-3xl text-denim-600">Modo treino</h1>
-        <p className="text-sm text-slate-600">Escolha filtros e pratique com casos aleatórios.</p>
+        <p className="text-sm text-slate-600">Escolha filtros e gere novos casos ficticios de forma procedural.</p>
       </div>
 
       <section className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
@@ -92,9 +69,9 @@ export function PracticePage() {
               className="w-full rounded-xl border border-slate-300 px-3 py-2"
             >
               <option value="all">Todas</option>
-              <option value="easy">Fácil</option>
-              <option value="medium">Médio</option>
-              <option value="hard">Difícil</option>
+              <option value="easy">Facil</option>
+              <option value="medium">Medio</option>
+              <option value="hard">Dificil</option>
             </select>
           </label>
 
@@ -111,19 +88,13 @@ export function PracticePage() {
               onClick={pickRandomCase}
               className="rounded-xl bg-denim-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-denim-500"
             >
-              Caso aleatório
+              Gerar novo caso
             </button>
           </div>
         </div>
       </section>
 
-      {selectedCase ? (
-        <GameSession key={`${selectedCase.id}-${selectedCase.category}`} caseData={selectedCase} mode="practice" />
-      ) : (
-        <section className="rounded-2xl border border-surface-200 bg-white p-4 text-sm text-slate-700 shadow-card">
-          Nenhum caso encontrado com os filtros atuais.
-        </section>
-      )}
+      <GameSession key={selectedCase.id} caseData={selectedCase} mode="practice" />
     </div>
   )
 }
