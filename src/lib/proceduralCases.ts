@@ -5,6 +5,7 @@ import type { Case, CaseClue, Difficulty, Disorder } from '../types/models'
 interface GenerationFilters {
   category?: string
   difficulty?: Difficulty
+  excludeDisorderIds?: string[]
 }
 
 interface GenerateProceduralCaseInput extends GenerationFilters {
@@ -18,6 +19,12 @@ interface RoleContext {
   maxAge: number
   role: string
   setting: string
+}
+
+interface CategoryContextBank {
+  settings: string[]
+  copingAttempts: string[]
+  collateralSignals: string[]
 }
 
 const roleContexts: RoleContext[] = [
@@ -232,6 +239,44 @@ const lastNames = [
   'Vieira',
 ]
 
+const titlePrefixes = [
+  'Caderno clinico',
+  'Painel de estudo',
+  'Sessao de raciocinio',
+  'Recorte de pratica',
+  'Laboratorio de hipoteses',
+  'Cena para analise',
+]
+
+const titleAngles = [
+  'pistas iniciais',
+  'perfil funcional',
+  'curso e contexto',
+  'leitura longitudinal',
+  'mapa de sinais',
+  'recorte de funcionamento',
+  'observacao em camadas',
+]
+
+const titleDomains = [
+  'rotina academica',
+  'rotina de trabalho',
+  'convivio familiar',
+  'vida social',
+  'autocuidado e sono',
+  'organizacao cotidiana',
+  'gestao emocional',
+]
+
+const titleQualifiers = [
+  'com variacao progressiva',
+  'com sobrecarga recente',
+  'com impacto multifatorial',
+  'com sinais persistentes',
+  'com oscilacao de desempenho',
+  'com custo funcional crescente',
+]
+
 const stressors = [
   'com acumulacao de demandas em curto prazo',
   'apos semanas de sobrecarga e pouco descanso',
@@ -240,6 +285,14 @@ const stressors = [
   'apos conflitos interpessoais recentes',
   'com quebra de habitos de sono e recuperacao',
   'em fase de incerteza sobre trabalho e estudo',
+  'apos transicao de rotina academica para profissional',
+  'durante periodo de maior exposicao social',
+  'em etapa de reorganizacao familiar e financeira',
+  'apos variacoes frequentes de agenda',
+  'com perda de tempo de lazer e recuperacao',
+  'com pressao por resultados em curto prazo',
+  'apos evento estressor de media intensidade',
+  'com ciclos de tentativa de compensacao sem estabilidade',
 ]
 
 const functionalImpacts = [
@@ -249,6 +302,12 @@ const functionalImpacts = [
   'atraso recorrente de compromissos',
   'evitacao de situacoes antes manejaveis',
   'dificuldade de manter foco por longos periodos',
+  'aumento de conflitos em relacoes proximas',
+  'menor tolerancia a frustacao no cotidiano',
+  'prejuizo em organizacao de prioridades',
+  'descontinuidade de projetos de medio prazo',
+  'queda de autocuidado em semanas de maior carga',
+  'maior dependencia de estrategias improvisadas para funcionar',
 ]
 
 const behavioralSnapshotsByDifficulty: Record<Difficulty, string[]> = {
@@ -257,18 +316,30 @@ const behavioralSnapshotsByDifficulty: Record<Difficulty, string[]> = {
     'tem levado mais tempo para iniciar compromissos do dia',
     'relata oscilacao objetiva de desempenho entre dias consecutivos',
     'observa dificuldade pratica para manter rotina de estudos ou trabalho',
+    'tem alternado dias de produtividade com dias de travamento funcional',
+    'passou a evitar pequenos compromissos por receio de nao dar conta',
+    'relata queda de consistencia em tarefas previsiveis',
+    'descreve cansaco mental desproporcional em tarefas simples',
   ],
   medium: [
     'alterna periodos curtos de compensacao com recaidas funcionais',
     'descreve tentativas de controle que aliviam apenas no curto prazo',
     'mantem esforco elevado, mas com desgaste progressivo ao longo da semana',
     'apresenta variacao de desempenho conforme gatilhos contextuais',
+    'combina estrategias de evitacao com picos de hipercontrole pouco sustentaveis',
+    'apresenta ciclos de sobrecompensacao seguidos por queda abrupta de energia',
+    'faz ajustes frequentes de rotina sem ganhos consistentes de estabilidade',
+    'vive alternancia entre monitoramento excessivo e abandono de estrategias',
   ],
   hard: [
     'o funcionamento oscila em ciclos de organizacao parcial seguidos de descompensacao',
     'a regulacao emocional e cognitiva parece depender de alto custo de autocontrole',
     'o padrao se manifesta como processo de manutencao, nao apenas como eventos isolados',
     'ha ruptura gradual entre intencao, execucao e avaliacao das proprias condutas',
+    'o padrao se repete mesmo com tentativas estruturadas de reorganizacao',
+    'a previsibilidade do funcionamento caiu apesar de alto investimento adaptativo',
+    'os sinais parecem acoplados a mecanimos de evitacao e sobrecarga em espiral',
+    'a organizacao subjetiva mostra rigidez crescente diante de estressores usuais',
   ],
 }
 
@@ -277,16 +348,21 @@ const internalLayersByDifficulty: Record<Difficulty, string[]> = {
     'com desconforto percebido de forma clara pela propria pessoa',
     'com sofrimento subjetivo descrito de maneira objetiva',
     'com consciencia de que o quadro ja afeta mais de uma area da vida',
+    'com percepcao nitida de perda de qualidade de vida',
   ],
   medium: [
     'com ambivalencia entre reconhecer prejuizo e tentar normalizar os sinais',
     'com sensacao de perda progressiva de previsibilidade na rotina',
     'com aumento de autovigilancia e reducao de flexibilidade emocional',
+    'com conflito entre necessidade de rendimento e capacidade de recuperacao',
+    'com alternancia entre expectativa de melhora rapida e frustracao recorrente',
   ],
   hard: [
     'com tensao entre necessidade de controle e enfraquecimento da autorregulacao',
     'com leitura interna marcada por rigidez interpretativa e fadiga adaptativa',
     'com dinamica de manutencao que combina vulnerabilidade, evitacao e sobrecompensacao',
+    'com deslocamento progressivo de identidade para o papel de "sobrevivencia funcional"',
+    'com processos de sentido que reforcam ciclos de alerta e exaustao',
   ],
 }
 
@@ -295,16 +371,21 @@ const abstractionLensesByDifficulty: Record<Difficulty, string[]> = {
     'o quadro aparece como sequencia de sinais concretos no cotidiano',
     'os indicios surgem de forma observavel em tarefas e relacoes',
     'a mudanca funcional pode ser vista em comportamentos especificos',
+    'os dados sugerem padrao reconhecivel sem necessidade de inferencia complexa',
   ],
   medium: [
     'o caso sugere um padrao em camadas, com fatores internos e contextuais',
     'os sinais se organizam em ciclo de ativacao, alivio breve e nova piora',
     'a narrativa aponta para interacao entre gatilho externo e vulnerabilidade basal',
+    'o funcionamento oscila conforme demandas sociais e mecanismos de enfrentamento',
+    'a leitura clinica exige integrar sinais comportamentais e custo subjetivo',
   ],
   hard: [
     'o caso se apresenta mais como dinamica processual do que como lista de sintomas',
     'a leitura exige integrar temporalidade, funcionamento e mecanismos de manutencao',
     'o nucleo clinico emerge da relacao entre contexto, autorregulacao e significado subjetivo',
+    'os marcadores clinicos aparecem de forma distribuida e parcialmente mascarada por compensacao',
+    'o material convida a formular hipotese por padrao de organizacao, nao por evento unico',
   ],
 }
 
@@ -313,35 +394,224 @@ const inferencePromptsByDifficulty: Record<Difficulty, string[]> = {
     'identifique quais sinais sao nucleares e quais sao secundarios',
     'compare os dados com hipoteses mais prevalentes da mesma categoria',
     'diferencie sofrimento situacional de padrao clinico persistente',
+    'mapeie quais elementos falam a favor e contra cada hipotese principal',
   ],
   medium: [
     'avalie se o padrao e melhor explicado por eixo primario ou por comorbidade',
     'considere como os comportamentos de enfrentamento mantem o ciclo atual',
     'teste hipoteses diferenciais com foco em curso temporal e impacto funcional',
+    'discuta quais pistas sao mais discriminativas entre hipoteses proximas',
+    'separe fatores precipitantes de fatores perpetuadores no caso',
   ],
   hard: [
     'priorize formulacao de mecanismo, nao apenas correspondencia por checklist',
     'analise a coerencia entre fenomenologia, cronologia e prejuizo estrutural',
     'revise diferenciais proximos a partir de padroes de manutencao e nao de sinais isolados',
+    'teste se a hipotese escolhida explica melhor o conjunto completo de variaveis',
+    'avalie a consistencia interna do caso em multiplos eixos de funcionamento',
   ],
 }
 
 const categorySignals: Partial<Record<string, string[]>> = {
-  Humor: ['oscilacao afetiva', 'queda de energia', 'perda de interesse'],
-  Ansiedade: ['medo antecipatorio', 'hipervigilancia', 'evitacao'],
-  'Obsessivo-compulsivo': ['pensamentos intrusivos', 'rituais repetitivos', 'busca de aliviio imediato'],
-  'Trauma e Estresse': ['reexperiencia', 'reatividade a gatilhos', 'evitacao defensiva'],
-  Neurodesenvolvimento: ['sinais desde fases precoces', 'prejuizo em mais de um contexto', 'impacto em aprendizagem'],
-  Psicoticos: ['alteracao de percepcao', 'pensamento desorganizado', 'quebra de teste de realidade'],
-  Dissociativos: ['desconexao subjetiva', 'lacunas de memoria', 'estranhamento de si'],
-  'Sintomas Somaticos': ['foco em sintomas corporais', 'ansiedade de saude', 'busca repetida de seguranca'],
-  'Alimentacao e Ingestao': ['padrao alimentar desadaptativo', 'preocupacao corporal', 'impacto fisico e social'],
-  'Sono-Vigilia': ['desregulacao de sono', 'sonolencia diurna', 'queda de recuperacao'],
-  Personalidade: ['padrao relacional persistente', 'rigidez comportamental', 'instabilidade emocional'],
-  'Uso de Substancias': ['perda de controle', 'uso apesar de prejuizos', 'recaida'],
-  'Comportamentos Aditivos': ['prioridade excessiva do comportamento', 'dificuldade de interromper', 'prejuizo funcional'],
-  Neurocognitivos: ['queda cognitiva progressiva', 'dificuldade de memoria', 'impacto na autonomia'],
-  'Controle de Impulsos e Conduta': ['impulsividade', 'desregulacao de raiva', 'violacao de regras'],
+  Humor: [
+    'oscilacao afetiva',
+    'queda de energia',
+    'perda de interesse',
+    'lentificacao psicologica',
+    'variacao de motivacao com impacto ocupacional',
+  ],
+  Ansiedade: [
+    'medo antecipatorio',
+    'hipervigilancia',
+    'evitacao',
+    'tensao fisiologica persistente',
+    'busca repetida de garantias',
+  ],
+  'Obsessivo-compulsivo': [
+    'pensamentos intrusivos',
+    'rituais repetitivos',
+    'busca de alivio imediato',
+    'checagem compulsiva',
+    'dificuldade de tolerar incerteza',
+  ],
+  'Trauma e Estresse': [
+    'reexperiencia',
+    'reatividade a gatilhos',
+    'evitacao defensiva',
+    'hiperativacao autonoma',
+    'alteracoes de confianca e seguranca basica',
+  ],
+  Neurodesenvolvimento: [
+    'sinais desde fases precoces',
+    'prejuizo em mais de um contexto',
+    'impacto em aprendizagem',
+    'variacao de desempenho por demanda executiva',
+    'persistencia de dificuldades ao longo do desenvolvimento',
+  ],
+  Psicoticos: [
+    'alteracao de percepcao',
+    'pensamento desorganizado',
+    'quebra de teste de realidade',
+    'conteudo ideativo rigido',
+    'dificuldade de autocorrecao de inferencias',
+  ],
+  Dissociativos: [
+    'desconexao subjetiva',
+    'lacunas de memoria',
+    'estranhamento de si',
+    'sensacao de irrealidade contextual',
+    'flutuacao de continuidade autobiografica',
+  ],
+  'Sintomas Somaticos': [
+    'foco em sintomas corporais',
+    'ansiedade de saude',
+    'busca repetida de seguranca',
+    'hiperfoco interoceptivo',
+    'uso frequente de servicos por angustia persistente',
+  ],
+  'Alimentacao e Ingestao': [
+    'padrao alimentar desadaptativo',
+    'preocupacao corporal',
+    'impacto fisico e social',
+    'comportamentos compensatorios',
+    'restricao ou descontrole alimentar recorrente',
+  ],
+  'Sono-Vigilia': [
+    'desregulacao de sono',
+    'sonolencia diurna',
+    'queda de recuperacao',
+    'latencia prolongada para dormir',
+    'instabilidade do ciclo sono-vigilia',
+  ],
+  Personalidade: [
+    'padrao relacional persistente',
+    'rigidez comportamental',
+    'instabilidade emocional',
+    'distorcoes interpessoais recorrentes',
+    'estrategias defensivas inflexiveis',
+  ],
+  'Uso de Substancias': [
+    'perda de controle',
+    'uso apesar de prejuizos',
+    'recaida',
+    'priorizacao do consumo',
+    'reducoes mal sucedidas',
+  ],
+  'Comportamentos Aditivos': [
+    'prioridade excessiva do comportamento',
+    'dificuldade de interromper',
+    'prejuizo funcional',
+    'escalada de tempo investido',
+    'continuidade apesar de perdas',
+  ],
+  Neurocognitivos: [
+    'queda cognitiva progressiva',
+    'dificuldade de memoria',
+    'impacto na autonomia',
+    'oscilacao atencional',
+    'prejuizo instrumental no dia a dia',
+  ],
+  'Controle de Impulsos e Conduta': [
+    'impulsividade',
+    'desregulacao de raiva',
+    'violacao de regras',
+    'baixa inibicao comportamental',
+    'ciclos de acao impulsiva e arrependimento',
+  ],
+}
+
+const categoryContextBanks: Partial<Record<string, CategoryContextBank>> = {
+  Humor: {
+    settings: ['na rotina de autocuidado', 'em demandas de produtividade', 'na relacao com metas de longo prazo'],
+    copingAttempts: [
+      'tentou aumentar disciplina por conta propria',
+      'procurou compensar com mais horas de atividade',
+      'alternou periodos de isolamento com tentativas de retomada',
+    ],
+    collateralSignals: [
+      'familia relata mudanca de ritmo e iniciativa',
+      'colegas percebem queda consistente de energia social',
+      'a propria pessoa descreve perda de prazer em atividades antes neutras',
+    ],
+  },
+  Ansiedade: {
+    settings: ['em situacoes de avaliacao', 'em tarefas com incerteza', 'na previsao de eventos futuros'],
+    copingAttempts: [
+      'busca reasseguramento repetido antes de decidir',
+      'evita cenarios com baixa previsibilidade',
+      'prepara planos detalhados para reduzir desconforto antecipatorio',
+    ],
+    collateralSignals: [
+      'relatos proximos descrevem tensao constante',
+      'ha aumento de verificacoes e perguntas repetidas',
+      'o ciclo de preocupacao se estende para multiplos dominios',
+    ],
+  },
+  'Obsessivo-compulsivo': {
+    settings: ['na organizacao de rotinas domesticas', 'em tarefas de responsabilidade', 'em contextos de higiene e seguranca'],
+    copingAttempts: [
+      'repete rituais para reduzir ansiedade',
+      'tenta neutralizar pensamentos com verificacoes',
+      'evita gatilhos por receio de perder controle',
+    ],
+    collateralSignals: [
+      'rotinas ficam mais longas por repeticoes',
+      'ha alivio breve seguido de retomada do ciclo',
+      'o gasto de tempo compromete compromissos relevantes',
+    ],
+  },
+  'Trauma e Estresse': {
+    settings: ['apos evento de forte impacto emocional', 'em contato com pistas associadas ao evento', 'na tentativa de retomar rotina anterior'],
+    copingAttempts: [
+      'evita contextos lembrados como gatilho',
+      'aumenta monitoramento de seguranca',
+      'tenta suprimir memorias relacionadas ao episodio',
+    ],
+    collateralSignals: [
+      'familia percebe irritabilidade e alerta elevado',
+      'ha queda de tolerancia a estimulos inesperados',
+      'o padrao interfere em deslocamento, sono ou convivio',
+    ],
+  },
+  Neurodesenvolvimento: {
+    settings: ['desde etapas escolares', 'em tarefas com alta demanda executiva', 'na transicao entre ambientes estruturados e livres'],
+    copingAttempts: [
+      'usa lembretes e listas de forma inconsistente',
+      'depende de terceiros para organizar sequencias complexas',
+      'alterna hiperfoco pontual com perda de continuidade',
+    ],
+    collateralSignals: [
+      'historico longitudinal aponta sinais persistentes',
+      'o desempenho muda conforme suporte externo disponivel',
+      'ha impacto simultaneo em estudo/trabalho e vida diaria',
+    ],
+  },
+  Personalidade: {
+    settings: ['em vinculos afetivos proximos', 'em contexto de critica ou frustracao', 'na manutencao de limites interpessoais'],
+    copingAttempts: [
+      'responde com estrategias relacionais extremas',
+      'oscila entre busca intensa de proximidade e afastamento',
+      'interpreta sinais neutros como ameaca ou rejeicao',
+    ],
+    collateralSignals: [
+      'padrao relacional se repete em diferentes vinculos',
+      'ha desgaste cronico na rede de apoio',
+      'mudancas de humor parecem fortemente reativas ao contexto social',
+    ],
+  },
+  'Comportamentos Aditivos': {
+    settings: ['em atividades digitais de alta recompensa', 'em ambientes de aposta recorrente', 'em periodos de maior estresse e escape'],
+    copingAttempts: [
+      'tenta limitar tempo sem manter o plano',
+      'reorganiza agenda para encaixar o comportamento',
+      'oculta frequencia real da atividade',
+    ],
+    collateralSignals: [
+      'outros compromissos perdem prioridade',
+      'ha continuidade apesar de perdas objetivas',
+      'surgem conflitos por promessas repetidas nao sustentadas',
+    ],
+  },
 }
 
 const clueTypeFlow: CaseClue['type'][] = ['chief_complaint', 'symptoms', 'duration', 'impairment']
@@ -461,11 +731,18 @@ function buildPersonName(rng: () => number): string {
 }
 
 function chooseDisorder(rng: () => number, filters: GenerationFilters): Disorder {
+  const excluded = new Set(filters.excludeDisorderIds ?? [])
   const exactFiltered = disorders.filter((disorder) => {
     const matchesCategory = !filters.category || disorder.category === filters.category
     const matchesDifficulty = !filters.difficulty || disorder.difficulty === filters.difficulty
     return matchesCategory && matchesDifficulty
   })
+
+  const exactNotExcluded = exactFiltered.filter((disorder) => !excluded.has(disorder.id))
+
+  if (exactNotExcluded.length > 0) {
+    return pickOne(exactNotExcluded, rng)
+  }
 
   if (exactFiltered.length > 0) {
     return pickOne(exactFiltered, rng)
@@ -473,6 +750,10 @@ function chooseDisorder(rng: () => number, filters: GenerationFilters): Disorder
 
   if (filters.category) {
     const byCategory = disorders.filter((disorder) => disorder.category === filters.category)
+    const byCategoryNotExcluded = byCategory.filter((disorder) => !excluded.has(disorder.id))
+    if (byCategoryNotExcluded.length > 0) {
+      return pickOne(byCategoryNotExcluded, rng)
+    }
     if (byCategory.length > 0) {
       return pickOne(byCategory, rng)
     }
@@ -480,12 +761,17 @@ function chooseDisorder(rng: () => number, filters: GenerationFilters): Disorder
 
   if (filters.difficulty) {
     const byDifficulty = disorders.filter((disorder) => disorder.difficulty === filters.difficulty)
+    const byDifficultyNotExcluded = byDifficulty.filter((disorder) => !excluded.has(disorder.id))
+    if (byDifficultyNotExcluded.length > 0) {
+      return pickOne(byDifficultyNotExcluded, rng)
+    }
     if (byDifficulty.length > 0) {
       return pickOne(byDifficulty, rng)
     }
   }
 
-  return pickOne(disorders, rng)
+  const allNotExcluded = disorders.filter((disorder) => !excluded.has(disorder.id))
+  return pickOne(allNotExcluded.length > 0 ? allNotExcluded : disorders, rng)
 }
 
 function normalizeToken(token: string): string {
@@ -554,41 +840,92 @@ function chooseRoleContext(age: number, rng: () => number): RoleContext {
   return pickOne(roleContexts, rng)
 }
 
+function getAgeBandLabel(age: number): string {
+  if (age <= 17) {
+    return 'adolescencia'
+  }
+  if (age <= 24) {
+    return 'inicio da vida adulta'
+  }
+  if (age <= 39) {
+    return 'adulto jovem'
+  }
+  if (age <= 59) {
+    return 'adulto'
+  }
+  return 'adulto mais velho'
+}
+
+function selectCategoryContext(category: string): CategoryContextBank {
+  const fallback: CategoryContextBank = {
+    settings: ['na organizacao da rotina', 'na convivencia social', 'na manutencao de responsabilidades diarias'],
+    copingAttempts: [
+      'tenta ajustar habitos com esforco proprio',
+      'reorganiza tarefas para reduzir sobrecarga',
+      'alterna estrategias de compensacao sem estabilidade',
+    ],
+    collateralSignals: [
+      'o entorno percebe mudanca funcional progressiva',
+      'o impacto aparece em mais de uma area da vida',
+      'ha variacao de desempenho apesar de tentativa de controle',
+    ],
+  }
+
+  return categoryContextBanks[category] ?? fallback
+}
+
 function buildTimeline(difficulty: Difficulty, rng: () => number): string {
   if (difficulty === 'easy') {
-    const months = 3 + Math.floor(rng() * 8)
+    const inWeeks = rng() < 0.3
+    if (inWeeks) {
+      const weeks = 8 + Math.floor(rng() * 18)
+      return `o padrao vem se repetindo ha cerca de ${weeks} semanas`
+    }
+
+    const months = 3 + Math.floor(rng() * 9)
     return `o padrao vem se repetindo ha cerca de ${months} meses`
   }
 
   if (difficulty === 'medium') {
-    const months = 6 + Math.floor(rng() * 15)
-    return `o quadro permanece recorrente ha aproximadamente ${months} meses, com oscilacoes`
+    const months = 6 + Math.floor(rng() * 19)
+    return `o quadro permanece recorrente ha aproximadamente ${months} meses, com oscilacoes de intensidade`
   }
 
-  const years = 1 + Math.floor(rng() * 5)
-  return `ha um curso prolongado, em torno de ${years} anos, com recaidas e piora funcional cumulativa`
+  const years = 1 + Math.floor(rng() * 7)
+  return `ha um curso prolongado, em torno de ${years} anos, com recaidas e custo funcional cumulativo`
 }
 
 function buildProgression(difficulty: Difficulty, rng: () => number): string {
   const progressions: Record<Difficulty, string[]> = {
-    easy: ['com piora gradual em fases de maior demanda', 'com desconforto continuo e sem remissao sustentada'],
+    easy: [
+      'com piora gradual em fases de maior demanda',
+      'com desconforto continuo e sem remissao sustentada',
+      'com alivio apenas parcial em periodos de baixa exigencia',
+      'com piora perceptivel quando a rotina perde previsibilidade',
+    ],
     medium: [
       'com impacto crescente em rotina social e ocupacional',
       'com alternancia entre tentativas de ajuste e nova piora',
+      'com recuo funcional apos periodos de compensacao intensa',
+      'com ampliacao do prejuizo para novas areas da vida diaria',
     ],
     hard: [
       'com ciclo de agravamento e recuperacoes parciais',
       'com queda progressiva de previsibilidade do funcionamento',
+      'com reorganizacao defensiva que preserva forma, mas nao estabilidade',
+      'com rigidez adaptativa e aumento de vulnerabilidade a gatilhos contextuais',
     ],
   }
   return pickOne(progressions[difficulty], rng)
 }
 
-function buildTitle(disorder: Disorder, age: number, roleContext: RoleContext, rng: () => number): string {
-  const starters = ['Hipotese em foco', 'Leitura de caso', 'Pistas clinicas', 'Caso para estudo']
-  const focus = extractKeywords(`${disorder.namePt} ${disorder.shortSummary}`, 2)
-  const focusText = focus.length > 0 ? focus.join(' e ') : disorder.category.toLowerCase()
-  return `${pickOne(starters, rng)}: ${focusText} (${age} anos, ${roleContext.setting})`
+function buildTitle(age: number, roleContext: RoleContext, rng: () => number): string {
+  const caseToken = Math.floor(rng() * 1296)
+    .toString(36)
+    .padStart(2, '0')
+    .toUpperCase()
+
+  return `${pickOne(titlePrefixes, rng)}: ${pickOne(titleAngles, rng)} na ${pickOne(titleDomains, rng)} ${pickOne(titleQualifiers, rng)} (${getAgeBandLabel(age)}, ${roleContext.setting}, ref.${caseToken})`
 }
 
 function selectKeywordFocus(disorder: Disorder, rng: () => number): {
@@ -623,7 +960,6 @@ function buildVignette(input: {
   rng: () => number
 }): string {
   const difficulty = input.disorder.difficulty
-  const summary = input.disorder.shortSummary.replace(/\.$/, '').toLowerCase()
   const stressor = pickOne(stressors, input.rng)
   const signal = pickOne(categorySignals[input.disorder.category] ?? ['sofrimento emocional recorrente'], input.rng)
   const behaviorSnapshot = pickOne(behavioralSnapshotsByDifficulty[difficulty], input.rng)
@@ -632,16 +968,20 @@ function buildVignette(input: {
   const timeline = buildTimeline(difficulty, input.rng)
   const progression = buildProgression(difficulty, input.rng)
   const keywordFocus = selectKeywordFocus(input.disorder, input.rng)
+  const categoryContext = selectCategoryContext(input.disorder.category)
+  const contextSetting = pickOne(categoryContext.settings, input.rng)
+  const copingAttempt = pickOne(categoryContext.copingAttempts, input.rng)
+  const collateralSignal = pickOne(categoryContext.collateralSignals, input.rng)
 
   if (difficulty === 'easy') {
-    return `${input.name}, ${input.age} anos, ${input.roleContext.role}, relata ${summary} ${input.roleContext.setting}. Nos ultimos meses, houve intensificacao ${stressor}, com destaque para ${signal}. De forma pratica, ${behaviorSnapshot} ${internalLayer}. Na cronologia, ${timeline}, ${progression}.`
+    return `${input.name}, ${input.age} anos, ${input.roleContext.role}, descreve mudancas persistentes ${input.roleContext.setting}. O quadro aparece ${contextSetting}, ${stressor}, com destaque para ${signal}. No cotidiano, ${behaviorSnapshot}; ${copingAttempt}, ${internalLayer}. Relatos colaterais indicam que ${collateralSignal}. Na cronologia, ${timeline}, ${progression}, com sinais centrais envolvendo ${keywordFocus.compressedFocus}.`
   }
 
   if (difficulty === 'medium') {
-    return `${input.name}, ${input.age} anos, ${input.roleContext.role}, descreve ${summary} ${input.roleContext.setting}. O relato se intensificou ${stressor}, e ${behaviorSnapshot}. ${abstractionLens}, combinando ${signal} e marcadores como ${keywordFocus.compressedFocus}. Em termos de curso, ${timeline}, ${progression}, com prejuizo progressivo na organizacao cotidiana.`
+    return `${input.name}, ${input.age} anos, ${input.roleContext.role}, apresenta quadro funcionalmente relevante ${input.roleContext.setting}. O relato se intensificou ${stressor}; no eixo comportamental, ${behaviorSnapshot}. Em paralelo, ${copingAttempt}, mas ${collateralSignal}. ${abstractionLens}, combinando ${signal} e marcadores como ${keywordFocus.compressedFocus}. Em termos de curso, ${timeline}, ${progression}, com prejuizo progressivo na organizacao cotidiana.`
   }
 
-  return `${input.name}, ${input.age} anos, ${input.roleContext.role}, apresenta narrativa de ${summary} ${input.roleContext.setting}. Em vez de apenas episodios pontuais, o quadro se adensa ${stressor}, enquanto ${behaviorSnapshot}. ${abstractionLens}, articulando ${signal} com eixos de ${keywordFocus.broadFocus}. Na leitura longitudinal, ${timeline}, ${progression}, sugerindo desajuste crescente entre autorregulacao, vinculos e desempenho funcional.`
+  return `${input.name}, ${input.age} anos, ${input.roleContext.role}, apresenta narrativa clinica em camadas ${input.roleContext.setting}. Em vez de eventos isolados, o quadro se adensa ${stressor}, enquanto ${behaviorSnapshot}. No manejo espontaneo, ${copingAttempt}, porem ${collateralSignal}. ${abstractionLens}, articulando ${signal} com eixos de ${keywordFocus.broadFocus}. Na leitura longitudinal, ${timeline}, ${progression}, sugerindo desajuste crescente entre autorregulacao, vinculos e desempenho funcional.`
 }
 
 function createClues(input: {
@@ -661,25 +1001,29 @@ function createClues(input: {
   const abstractionLens = pickOne(abstractionLensesByDifficulty[difficulty], input.rng)
   const inferencePrompt = pickOne(inferencePromptsByDifficulty[difficulty], input.rng)
   const keywordFocus = selectKeywordFocus(input.disorder, input.rng)
+  const categoryContext = selectCategoryContext(input.disorder.category)
+  const contextSetting = pickOne(categoryContext.settings, input.rng)
+  const copingAttempt = pickOne(categoryContext.copingAttempts, input.rng)
+  const collateralSignal = pickOne(categoryContext.collateralSignals, input.rng)
 
   const clueTextsByDifficulty: Record<Difficulty, string[]> = {
     easy: [
-      `Relato principal: ${summary}. O desconforto fica mais evidente ${input.roleContext.setting}, e ${behaviorSnapshot}.`,
-      `Sinais observados: ${categoryHint}. O relato explicita marcadores como ${keywordFocus.broadFocus}, ${internalLayer}.`,
-      `Cronologia: ${timeline}, ${progression}. O curso indica continuidade clinica, nao apenas variacao breve.`,
-      `Impacto funcional: ${impacts[0] ?? 'queda de desempenho'}, ${impacts[1] ?? 'evitacao social'} e ${impacts[2] ?? 'atraso de compromissos'}. Direcao de estudo: ${inferencePrompt}.`,
+      `Queixa principal: o caso sugere ${summary}. O desconforto fica mais evidente ${input.roleContext.setting}, especialmente ${contextSetting}.`,
+      `Sinais observados: ${categoryHint}. Em termos concretos, ${behaviorSnapshot}; ${internalLayer}.`,
+      `Cronologia e manejo: ${timeline}, ${progression}. No enfrentamento, ${copingAttempt}, mas ${collateralSignal}.`,
+      `Impacto funcional: ${impacts[0] ?? 'queda de desempenho'}, ${impacts[1] ?? 'evitacao social'} e ${impacts[2] ?? 'atraso de compromissos'}. Foco de raciocinio: ${inferencePrompt}.`,
     ],
     medium: [
-      `Nucleo do relato: ${summary}. No cotidiano ${input.roleContext.setting}, ${behaviorSnapshot}, ${internalLayer}.`,
-      `Configuracao sintomatica: ${categoryHint}. Em camadas, aparecem eixos de ${keywordFocus.compressedFocus}, com oscilacao entre controle e piora.`,
-      `Temporalidade: ${timeline}, ${progression}. O padrao retorna mesmo apos estrategias espontaneas de compensacao.`,
-      `Prejuizo: ${impacts[0] ?? 'queda de desempenho'} e ${impacts[1] ?? 'evitacao social'}, com extensao para ${impacts[2] ?? 'sono irregular'}. Pergunta critica: ${inferencePrompt}.`,
+      `Nucleo narrativo: ha um padrao compativel com ${summary}. No cotidiano ${input.roleContext.setting}, ${behaviorSnapshot}, ${internalLayer}.`,
+      `Configuracao de pistas: ${categoryHint}. Em camadas, aparecem eixos de ${keywordFocus.compressedFocus}, associados a ${contextSetting}.`,
+      `Temporalidade e manutencao: ${timeline}, ${progression}. O padrao retorna mesmo apos estrategias como ${copingAttempt}.`,
+      `Prejuizo: ${impacts[0] ?? 'queda de desempenho'} e ${impacts[1] ?? 'evitacao social'}, com extensao para ${impacts[2] ?? 'sono irregular'}. Relato colateral: ${collateralSignal}. Pergunta critica: ${inferencePrompt}.`,
     ],
     hard: [
-      `Fenomenologia inicial: ${summary}. Em contexto ${input.roleContext.setting}, ${behaviorSnapshot}, ${internalLayer}.`,
-      `Leitura processual: ${abstractionLens}. O material aponta para interacao entre ${categoryHint} e vetores de ${keywordFocus.compressedFocus}.`,
-      `Curso longitudinal: ${timeline}, ${progression}. A repeticao do ciclo sugere mecanismo de manutencao em vez de resposta aguda simples.`,
-      `Estrutura de prejuizo: ${impacts[0] ?? 'queda de desempenho'}, ${impacts[1] ?? 'evitacao social'} e ${impacts[2] ?? 'desorganizacao de rotina'}. Foco para raciocinio diferencial: ${inferencePrompt}.`,
+      `Fenomenologia inicial: o caso pode ser descrito como ${summary}. Em contexto ${input.roleContext.setting}, ${behaviorSnapshot}, ${internalLayer}.`,
+      `Leitura processual: ${abstractionLens}. O material aponta para interacao entre ${categoryHint}, ${contextSetting} e vetores de ${keywordFocus.compressedFocus}.`,
+      `Curso longitudinal: ${timeline}, ${progression}. A repeticao do ciclo persiste mesmo quando ${copingAttempt}; adicionalmente, ${collateralSignal}.`,
+      `Estrutura de prejuizo: ${impacts[0] ?? 'queda de desempenho'}, ${impacts[1] ?? 'evitacao social'} e ${impacts[2] ?? 'desorganizacao de rotina'}. Foco para diferencial: ${inferencePrompt}.`,
     ],
   }
 
@@ -722,7 +1066,7 @@ function buildProceduralCase(input: GenerateProceduralCaseInput): Case {
 
   return {
     id: caseId,
-    title: buildTitle(disorder, age, roleContext, rng),
+    title: buildTitle(age, roleContext, rng),
     category: disorder.category,
     difficulty: disorder.difficulty,
     vignette: buildVignette({
@@ -767,6 +1111,7 @@ export function generatePracticeProceduralCase(input: {
   category?: string
   difficulty?: Difficulty
   seed?: string | number
+  excludeDisorderIds?: string[]
 }): Case {
   const fallbackSeed = `${Date.now()}-${Math.random()}`
   return buildProceduralCase({
@@ -774,5 +1119,6 @@ export function generatePracticeProceduralCase(input: {
     caseIdPrefix: 'proc-practice',
     category: input.category,
     difficulty: input.difficulty,
+    excludeDisorderIds: input.excludeDisorderIds,
   })
 }

@@ -12,7 +12,7 @@ export function CaseCard({ caseData }: CaseCardProps) {
   }
 
   return (
-    <article className="panel p-5 md:p-6">
+    <article className="panel panel-motion p-5 md:p-6">
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">
         <span className="chip rounded-full px-3 py-1">{caseData.category}</span>
         <span className="chip rounded-full px-3 py-1">{difficultyLabel[caseData.difficulty]}</span>

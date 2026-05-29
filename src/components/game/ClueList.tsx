@@ -21,7 +21,7 @@ export function ClueList({ clues, revealedCluesCount }: ClueListProps) {
 
   if (!visibleClues.length) {
     return (
-      <section className="panel p-4">
+      <section className="panel panel-motion p-4">
         <h3 className="page-title text-xl">Pistas</h3>
         <p className="mt-2 text-sm text-[color:var(--text-muted)]">Ainda sem pistas extras. Um erro libera a proxima dica.</p>
       </section>
@@ -29,11 +29,15 @@ export function ClueList({ clues, revealedCluesCount }: ClueListProps) {
   }
 
   return (
-    <section className="panel p-4">
+    <section className="panel panel-motion p-4">
       <h3 className="page-title text-xl">Pistas reveladas</h3>
       <ul className="mt-3 space-y-3">
-        {visibleClues.map((clue) => (
-          <li key={clue.id} className="panel-soft px-3 py-2 text-sm text-[color:var(--text-body)]">
+        {visibleClues.map((clue, index) => (
+          <li
+            key={clue.id}
+            className="clue-reveal panel-soft px-3 py-2 text-sm text-[color:var(--text-body)]"
+            style={{ animationDelay: `${index * 55}ms` }}
+          >
             <p className="font-semibold text-[color:var(--text-strong)]">{clueTypeLabels[clue.type]}</p>
             <p>{clue.text}</p>
           </li>

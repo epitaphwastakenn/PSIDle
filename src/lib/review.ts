@@ -1,10 +1,12 @@
-import type { Case, ReviewItem } from '../types/models'
+import type { Case, ReviewHistoryEntry, ReviewItem } from '../types/models'
 
 interface AddReviewInput {
   caseId: string
   correctDisorderId: string
   guessedDisorderId?: string
   caseSnapshot?: Case
+  originalGuesses?: string[]
+  originalCluesUsed?: number
   now?: Date
 }
 
@@ -38,7 +40,9 @@ export function addReviewItem(items: ReviewItem[], input: AddReviewInput): Revie
         ...item,
         guessedDisorderId: input.guessedDisorderId,
         caseSnapshot: input.caseSnapshot ?? item.caseSnapshot,
-        dueAt: addDays(now, 1).toISOString(),
+        originalGuesses: input.originalGuesses ?? item.originalGuesses,
+        originalCluesUsed: input.originalCluesUsed ?? item.originalCluesUsed,
+        dueAt: now.toISOString(),
         interval: 1,
         ease: Math.max(1.3, item.ease - 0.1),
         status: 'due',
@@ -52,11 +56,14 @@ export function addReviewItem(items: ReviewItem[], input: AddReviewInput): Revie
     correctDisorderId: input.correctDisorderId,
     guessedDisorderId: input.guessedDisorderId,
     caseSnapshot: input.caseSnapshot,
+    originalGuesses: input.originalGuesses,
+    originalCluesUsed: input.originalCluesUsed,
+    reviewHistory: [],
     createdAt: now.toISOString(),
-    dueAt: addDays(now, 1).toISOString(),
+    dueAt: now.toISOString(),
     interval: 1,
     ease: 2.3,
-    status: 'learning',
+    status: 'due',
   }
 
   return [newItem, ...items]
@@ -66,11 +73,22 @@ export function getDueReviewItems(items: ReviewItem[], now = new Date()): Review
   const nowMs = now.getTime()
 
   return items
-    .filter((item) => new Date(item.dueAt).getTime() <= nowMs && item.status !== 'mastered')
+    .filter((item) => {
+      const hasNeverBeenReviewed = (item.reviewHistory?.length ?? 0) === 0
+      return item.status !== 'mastered' && (hasNeverBeenReviewed || new Date(item.dueAt).getTime() <= nowMs)
+    })
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())
 }
 
-export function gradeReviewItem(item: ReviewItem, isCorrect: boolean, now = new Date()): ReviewItem {
+export function gradeReviewItem(item: ReviewItem, isCorrect: boolean, guess?: string, now = new Date()): ReviewItem {
+  const reviewEntry: ReviewHistoryEntry = {
+    id: createId('review-log'),
+    reviewedAt: now.toISOString(),
+    guess: guess?.trim() || undefined,
+    correct: isCorrect,
+  }
+  const reviewHistory = [reviewEntry, ...(item.reviewHistory ?? [])]
+
   if (isCorrect) {
     const newEase = Math.min(3, item.ease + 0.15)
     const newInterval = Math.max(2, Math.round(item.interval * newEase))
@@ -79,6 +97,7 @@ export function gradeReviewItem(item: ReviewItem, isCorrect: boolean, now = new 
 
     return {
       ...item,
+      reviewHistory,
       ease: newEase,
       interval: newInterval,
       dueAt: nextDue.toISOString(),
@@ -88,6 +107,7 @@ export function gradeReviewItem(item: ReviewItem, isCorrect: boolean, now = new 
 
   return {
     ...item,
+    reviewHistory,
     ease: Math.max(1.3, item.ease - 0.2),
     interval: 1,
     dueAt: addDays(now, 1).toISOString(),

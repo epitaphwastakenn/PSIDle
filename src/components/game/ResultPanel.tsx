@@ -28,7 +28,7 @@ export function ResultPanel({
   explanationReviewed,
 }: ResultPanelProps) {
   return (
-    <section className="panel animate-fadeUp p-5">
+    <section className="panel reward-flash p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="page-title text-2xl">{solved ? 'Resposta correta' : 'Fim da tentativa'}</h3>
         <span className="chip rounded-full px-3 py-1 text-sm font-semibold">Score: {score}</span>
@@ -44,7 +44,7 @@ export function ResultPanel({
         <DifferentialList items={differentials} />
       </div>
 
-      <div className="panel-soft mt-4 p-3 text-sm text-[color:var(--text-body)]">
+      <div className="reward-flash panel-soft mt-4 p-3 text-sm text-[color:var(--text-body)]">
         <p className="font-semibold text-[color:var(--text-strong)]">Recompensas da partida</p>
         <p>
           +{xpGained} XP | +{coinsGained} moedas

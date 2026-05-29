@@ -107,8 +107,25 @@ Chaves versionadas:
 - `psidle:v1:progress`
 - `psidle:v1:tasks`
 - `psidle:v1:review`
+- `psidle:user-settings:v1`
 
 Com tratamento de dados ausentes/corrompidos.
+
+## Audio e configuracoes
+
+Sons opcionais devem ficar em:
+
+- `public/sounds/correct.mp3`
+- `public/sounds/wrong.mp3`
+- `public/sounds/type-1.mp3`
+- `public/sounds/type-2.mp3`
+- `public/sounds/click.mp3`
+
+Se algum arquivo estiver ausente, o app ignora a falha silenciosamente.
+
+As preferencias de som ficam salvas em `localStorage` na chave `psidle:user-settings:v1`. O painel permite mutar tudo, ajustar volume geral, mutar sons individuais e controlar volume separado para acerto, erro, digitacao e clique.
+
+Navegadores bloqueiam audio antes da primeira interacao do usuario. Por isso, o app destrava o sistema de audio no primeiro `pointerdown`, `touchstart` ou `keydown`; depois disso os sons funcionam normalmente conforme as configuracoes.
 
 ## Adicionar novos transtornos
 

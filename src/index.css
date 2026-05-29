@@ -64,10 +64,12 @@ body {
   font-family: inherit;
   color: var(--text-body);
   background:
-    radial-gradient(circle at 10% 4%, rgba(127, 86, 255, 0.26) 0%, rgba(127, 86, 255, 0) 42%),
-    radial-gradient(circle at 92% -2%, rgba(58, 140, 255, 0.24) 0%, rgba(58, 140, 255, 0) 40%),
-    radial-gradient(circle at 50% 110%, rgba(23, 211, 191, 0.16) 0%, rgba(23, 211, 191, 0) 44%),
+    linear-gradient(120deg, rgba(127, 86, 255, 0.16), transparent 34%),
+    linear-gradient(240deg, rgba(58, 140, 255, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(23, 211, 191, 0.08), transparent 54%),
     linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-main) 100%);
+  background-attachment: fixed;
+  overflow-x: hidden;
 }
 
 a {
@@ -84,6 +86,11 @@ a {
   border: 1px solid var(--border-soft);
   border-radius: 1.2rem;
   box-shadow: var(--panel-shadow);
+  transition:
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    transform 260ms ease,
+    background-color 260ms ease;
 }
 
 .panel-soft {
@@ -106,6 +113,8 @@ a {
   border: 1px solid var(--border-soft);
   background: var(--bg-chip);
   color: var(--text-body);
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-primary,
@@ -119,7 +128,8 @@ a {
   padding: 0.56rem 0.95rem;
   font-weight: 700;
   font-size: 0.9rem;
-  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
+  transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease, border-color 220ms ease;
+  transform: translateZ(0);
 }
 
 .btn-primary {
@@ -129,10 +139,18 @@ a {
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(1.01);
   box-shadow:
     0 0 0 1px rgba(190, 174, 255, 0.6),
     0 0 26px rgba(83, 151, 255, 0.5);
+}
+
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled),
+.btn-ghost:active:not(:disabled),
+.btn-danger:active:not(:disabled),
+.btn-success:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
 }
 
 .btn-secondary {
@@ -204,6 +222,7 @@ a {
 }
 
 .top-nav-link {
+  position: relative;
   border-radius: 999px;
   padding: 0.4rem 0.72rem;
   font-size: 0.82rem;
@@ -227,6 +246,17 @@ a {
   box-shadow: var(--glow-ring);
 }
 
+.top-nav-link-active::after {
+  position: absolute;
+  right: 0.7rem;
+  bottom: -0.4rem;
+  left: 0.7rem;
+  height: 2px;
+  content: '';
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: navGlow 1800ms ease-in-out infinite;
+}
+
 .stat-tile {
   border-radius: 1rem;
   border: 1px solid var(--border-soft);
@@ -240,4 +270,229 @@ a {
 .no-scrollbar::-webkit-scrollbar {
   height: 0;
   width: 0;
+}
+
+.app-ambient {
+  position: relative;
+  isolation: isolate;
+}
+
+.app-ambient::before {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  content: '';
+  background:
+    linear-gradient(115deg, transparent 0%, rgba(95, 143, 255, 0.08) 34%, transparent 58%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 52px);
+  opacity: 0.75;
+  animation: ambientDrift 22s linear infinite;
+}
+
+.app-ambient::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: '';
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 18%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.18), transparent 42%);
+}
+
+.page-motion {
+  animation: pageEnter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+.panel-motion {
+  animation: panelRise 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center top;
+  will-change: opacity, transform;
+}
+
+.clue-reveal {
+  animation: clueReveal 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+.list-pop {
+  animation: listPop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+.feedback-correct {
+  animation: successPop 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.feedback-wrong {
+  animation: errorShake 420ms ease both;
+}
+
+.progress-flow {
+  background-size: 180% 100%;
+  animation: progressFlow 2200ms linear infinite;
+}
+
+.reward-flash {
+  animation: rewardFlash 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.nav-shell {
+  animation: navDrop 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .panel:hover {
+    border-color: rgba(121, 151, 255, 0.48);
+  }
+}
+
+@keyframes ambientDrift {
+  0% {
+    transform: translate3d(-18px, 0, 0);
+  }
+  50% {
+    transform: translate3d(18px, -10px, 0);
+  }
+  100% {
+    transform: translate3d(-18px, 0, 0);
+  }
+}
+
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes panelRise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes clueReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.995);
+    border-color: rgba(59, 215, 176, 0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes listPop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0.995);
+    box-shadow: 0 0 0 rgba(59, 215, 176, 0);
+  }
+  45% {
+    transform: scale(1.006);
+    box-shadow: 0 0 0 5px rgba(59, 215, 176, 0.16);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes errorShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(3px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes progressFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 180% 50%;
+  }
+}
+
+@keyframes rewardFlash {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.995);
+  }
+  35% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.006);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes navDrop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes navGlow {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scaleX(0.65);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

@@ -60,6 +60,7 @@ export interface Attempt {
 }
 
 export interface UserProgress {
+  displayName?: string
   xp: number
   level: number
   coins: number
@@ -94,11 +95,21 @@ export interface ReviewItem {
   correctDisorderId: string
   guessedDisorderId?: string
   caseSnapshot?: Case
+  originalGuesses?: string[]
+  originalCluesUsed?: number
+  reviewHistory?: ReviewHistoryEntry[]
   createdAt: string
   dueAt: string
   interval: number
   ease: number
   status: 'due' | 'learning' | 'mastered'
+}
+
+export interface ReviewHistoryEntry {
+  id: string
+  reviewedAt: string
+  guess?: string
+  correct: boolean
 }
 
 export interface Achievement {

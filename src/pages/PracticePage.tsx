@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { GameSession } from '../components/game/GameSession'
 import { disorderCategories } from '../data/disorders'
+import { audioManager } from '../lib/audio'
 import { generatePracticeProceduralCase } from '../lib/proceduralCases'
 import type { Case, Difficulty } from '../types/models'
 
@@ -14,6 +15,7 @@ export function PracticePage() {
   const categories = useMemo(() => disorderCategories, [])
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all')
+  const [recentDisorderIds, setRecentDisorderIds] = useState<string[]>([])
   const [selectedCase, setSelectedCase] = useState<Case>(() =>
     generatePracticeProceduralCase({
       seed: buildSeed(),
@@ -25,11 +27,15 @@ export function PracticePage() {
       seed,
       category: categoryFilter === 'all' ? undefined : categoryFilter,
       difficulty: difficultyFilter === 'all' ? undefined : difficultyFilter,
+      excludeDisorderIds: Array.from(new Set([selectedCase.correctDisorderId, ...recentDisorderIds.slice(-7)])),
     })
   }
 
   function pickRandomCase() {
-    setSelectedCase(generateCaseWithFilters(buildSeed()))
+    audioManager.playClick()
+    const generated = generateCaseWithFilters(buildSeed())
+    setSelectedCase(generated)
+    setRecentDisorderIds((previous) => [...previous.slice(-15), generated.correctDisorderId])
   }
 
   return (
@@ -45,7 +51,10 @@ export function PracticePage() {
             <span className="mb-1 block font-semibold text-[color:var(--text-body)]">Categoria</span>
             <select
               value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
+              onChange={(event) => {
+                audioManager.playClick()
+                setCategoryFilter(event.target.value)
+              }}
               className="field-select"
             >
               <option value="all">Todas</option>
@@ -61,7 +70,10 @@ export function PracticePage() {
             <span className="mb-1 block font-semibold text-[color:var(--text-body)]">Dificuldade</span>
             <select
               value={difficultyFilter}
-              onChange={(event) => setDifficultyFilter(event.target.value as DifficultyFilter)}
+              onChange={(event) => {
+                audioManager.playClick()
+                setDifficultyFilter(event.target.value as DifficultyFilter)
+              }}
               className="field-select"
             >
               <option value="all">Todas</option>

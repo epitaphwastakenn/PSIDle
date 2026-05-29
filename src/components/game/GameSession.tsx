@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { disorders } from '../../data/disorders'
 import type { Attempt, Case } from '../../types/models'
 import { applyAchievementUnlocks } from '../../lib/achievementEngine'
+import { audioManager } from '../../lib/audio'
 import { getTodayKey } from '../../lib/daily'
 import { findDisorderByGuess, isCorrectGuess } from '../../lib/guessing'
 import {
@@ -59,54 +60,6 @@ function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10_000)}`
 }
 
-function playGuessFeedbackSound(type: Exclude<GuessFeedbackType, 'idle'>): void {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  try {
-    const audioWindow = window as Window & { webkitAudioContext?: typeof AudioContext }
-    const AudioContextConstructor = window.AudioContext ?? audioWindow.webkitAudioContext
-    if (!AudioContextConstructor) {
-      return
-    }
-
-    const audioContext = new AudioContextConstructor()
-    const now = audioContext.currentTime
-
-    const playTone = (frequencyStart: number, frequencyEnd: number, startOffset: number, duration: number) => {
-      const oscillator = audioContext.createOscillator()
-      const gainNode = audioContext.createGain()
-
-      oscillator.type = type === 'correct' ? 'triangle' : 'sawtooth'
-      oscillator.frequency.setValueAtTime(frequencyStart, now + startOffset)
-      oscillator.frequency.linearRampToValueAtTime(frequencyEnd, now + startOffset + duration)
-
-      gainNode.gain.setValueAtTime(0.0001, now + startOffset)
-      gainNode.gain.exponentialRampToValueAtTime(0.07, now + startOffset + 0.02)
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + startOffset + duration)
-
-      oscillator.connect(gainNode)
-      gainNode.connect(audioContext.destination)
-      oscillator.start(now + startOffset)
-      oscillator.stop(now + startOffset + duration)
-    }
-
-    if (type === 'correct') {
-      playTone(560, 740, 0, 0.09)
-      playTone(760, 960, 0.11, 0.09)
-    } else {
-      playTone(320, 210, 0, 0.18)
-    }
-
-    window.setTimeout(() => {
-      audioContext.close().catch(() => undefined)
-    }, 320)
-  } catch {
-    // no-op: sound feedback is optional
-  }
-}
-
 export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
   const [guesses, setGuesses] = useState<string[]>([])
   const [wrongGuessesCount, setWrongGuessesCount] = useState(0)
@@ -162,7 +115,11 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
 
   function showGuessFeedback(type: Exclude<GuessFeedbackType, 'idle'>, message: string) {
     setGuessFeedback({ type, message })
-    playGuessFeedbackSound(type)
+    if (type === 'correct') {
+      audioManager.playCorrect()
+    } else {
+      audioManager.playWrong()
+    }
   }
 
   function finalizeAttempt(
@@ -232,6 +189,8 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
         correctDisorderId: caseData.correctDisorderId,
         guessedDisorderId,
         caseSnapshot: caseData,
+        originalGuesses: attemptGuesses,
+        originalCluesUsed: finalCluesUsed,
       })
       saveReviewItems(reviewItems)
       setReviewAdded(true)
@@ -339,10 +298,13 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       return
     }
 
+    audioManager.playClick()
     const reviewItems = addReviewItem(getReviewItems(), {
       caseId: caseData.id,
       correctDisorderId: caseData.correctDisorderId,
       caseSnapshot: caseData,
+      originalGuesses: guesses,
+      originalCluesUsed: revealedCluesCount,
     })
     saveReviewItems(reviewItems)
     setReviewAdded(true)
@@ -354,6 +316,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       return
     }
 
+    audioManager.playClick()
     let progress = getUserProgress()
     progress = awardXp(progress, 20)
     saveUserProgress(progress)

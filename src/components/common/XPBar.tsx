@@ -22,7 +22,7 @@ export function XPBar({ xp, level }: XPBarProps) {
       </div>
       <div className="h-3 overflow-hidden rounded-full border border-[color:var(--border-soft)] bg-[color:rgba(31,45,90,0.55)]">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-[#8a6cff] via-[#5e8fff] to-[#3bd7b0] transition-all duration-500"
+          className="progress-flow h-full rounded-full bg-gradient-to-r from-[#8a6cff] via-[#5e8fff] to-[#3bd7b0] transition-all duration-700"
           style={{ width: `${progress}%` }}
         />
       </div>

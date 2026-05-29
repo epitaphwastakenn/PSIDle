@@ -25,7 +25,7 @@ export function RewardToast({ show, message, durationMs = 2200, onClose }: Rewar
   }
 
   return (
-    <div className="panel fixed bottom-4 right-4 z-50 animate-fadeUp px-4 py-3 text-sm font-semibold text-[color:var(--text-strong)] glow-outline">
+    <div className="panel reward-flash fixed bottom-4 right-4 z-50 max-w-[calc(100vw-2rem)] px-4 py-3 text-sm font-semibold text-[color:var(--text-strong)] glow-outline">
       {message}
     </div>
   )

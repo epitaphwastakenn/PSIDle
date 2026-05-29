@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { audioManager } from '../../lib/audio'
 
 interface GuessInputProps {
   value: string
@@ -26,19 +27,28 @@ export function GuessInput({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    audioManager.playClick()
     onSubmit()
+  }
+
+  function handleInputChange(nextValue: string) {
+    if (nextValue.length > value.length) {
+      audioManager.playTyping()
+    }
+
+    onChange(nextValue)
   }
 
   return (
     <form
       onSubmit={handleSubmit}
       className={[
-        'panel p-4 transition',
+        'panel panel-motion p-4 transition',
         feedbackType === 'correct'
-          ? 'ring-2 ring-[color:rgba(59,215,176,0.75)] bg-[color:rgba(59,215,176,0.06)]'
+          ? 'feedback-correct ring-2 ring-[color:rgba(59,215,176,0.75)] bg-[color:rgba(59,215,176,0.06)]'
           : '',
         feedbackType === 'wrong'
-          ? 'ring-2 ring-[color:rgba(255,111,159,0.75)] bg-[color:rgba(255,111,159,0.07)] animate-pulse'
+          ? 'feedback-wrong ring-2 ring-[color:rgba(255,111,159,0.75)] bg-[color:rgba(255,111,159,0.07)]'
           : '',
       ].join(' ')}
     >
@@ -51,7 +61,7 @@ export function GuessInput({
           list={listId}
           value={value}
           disabled={disabled}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => handleInputChange(event.target.value)}
           placeholder="Digite o transtorno em portugues"
           className={[
             'field-input disabled:cursor-not-allowed disabled:opacity-70',
@@ -76,10 +86,10 @@ export function GuessInput({
           className={[
             'mt-2 rounded-lg border px-3 py-2 text-sm font-semibold',
             feedbackType === 'correct'
-              ? 'border-[color:rgba(59,215,176,0.6)] bg-[color:rgba(59,215,176,0.16)] text-[color:var(--text-strong)]'
+              ? 'feedback-correct border-[color:rgba(59,215,176,0.6)] bg-[color:rgba(59,215,176,0.16)] text-[color:var(--text-strong)]'
               : '',
             feedbackType === 'wrong'
-              ? 'border-[color:rgba(255,111,159,0.6)] bg-[color:rgba(255,111,159,0.16)] text-[color:var(--text-strong)]'
+              ? 'feedback-wrong border-[color:rgba(255,111,159,0.6)] bg-[color:rgba(255,111,159,0.16)] text-[color:var(--text-strong)]'
               : '',
           ].join(' ')}
           role="status"

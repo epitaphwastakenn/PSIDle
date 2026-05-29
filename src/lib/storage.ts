@@ -10,6 +10,7 @@ const KEYS = {
 }
 
 const defaultProgress: UserProgress = {
+  displayName: undefined,
   xp: 0,
   level: 1,
   coins: 0,
@@ -47,6 +48,7 @@ export function getUserProgress(): UserProgress {
   return {
     ...defaultProgress,
     ...parsed,
+    displayName: typeof parsed.displayName === 'string' ? parsed.displayName : undefined,
     attempts: Array.isArray(parsed.attempts) ? parsed.attempts : [],
     playedCaseIds: Array.isArray(parsed.playedCaseIds) ? parsed.playedCaseIds : [],
     achievements: Array.isArray(parsed.achievements) ? parsed.achievements : [],
