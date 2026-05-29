@@ -1,0 +1,68 @@
+import type { Achievement } from '../types/models'
+
+export const achievements: Achievement[] = [
+  {
+    id: 'ach-first-step',
+    title: 'Primeiro Passo',
+    description: 'Conclua seu primeiro caso.',
+    conditionKey: 'cases_played_1',
+    rewardXp: 80,
+    rewardCoins: 30,
+  },
+  {
+    id: 'ach-daily-3',
+    title: 'Consistência Inicial',
+    description: 'Conclua 3 casos diários.',
+    conditionKey: 'daily_played_3',
+    rewardXp: 120,
+    rewardCoins: 45,
+  },
+  {
+    id: 'ach-practice-5',
+    title: 'Treino em Dia',
+    description: 'Resolva 5 casos no modo treino.',
+    conditionKey: 'practice_solved_5',
+    rewardXp: 130,
+    rewardCoins: 55,
+  },
+  {
+    id: 'ach-perfect-3',
+    title: 'Acerto de Primeira',
+    description: 'Consiga 3 partidas com 100 pontos.',
+    conditionKey: 'perfect_scores_3',
+    rewardXp: 160,
+    rewardCoins: 60,
+  },
+  {
+    id: 'ach-streak-5',
+    title: 'Sequência Forte',
+    description: 'Alcance streak de 5 dias.',
+    conditionKey: 'streak_5',
+    rewardXp: 180,
+    rewardCoins: 70,
+  },
+  {
+    id: 'ach-hard-3',
+    title: 'Mente Analítica',
+    description: 'Resolva 3 casos difíceis.',
+    conditionKey: 'hard_solved_3',
+    rewardXp: 170,
+    rewardCoins: 65,
+  },
+  {
+    id: 'ach-accuracy-70',
+    title: 'Precisão de 70%',
+    description: 'Mantenha taxa de acerto geral de pelo menos 70% com 10 tentativas.',
+    conditionKey: 'accuracy_70_10',
+    rewardXp: 150,
+    rewardCoins: 50,
+  },
+  {
+    id: 'ach-review-10',
+    title: 'Revisão Ativa',
+    description: 'Conclua 10 revisões.',
+    conditionKey: 'reviews_10',
+    rewardXp: 140,
+    rewardCoins: 50,
+  },
+]
