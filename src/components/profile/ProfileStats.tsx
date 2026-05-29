@@ -11,9 +11,9 @@ interface ProfileStatsProps {
 
 export function ProfileStats({ level, xp, coins, streak, totalCases, accuracy }: ProfileStatsProps) {
   return (
-    <section className="space-y-4 rounded-2xl border border-surface-200 bg-white p-5 shadow-card">
+    <section className="panel space-y-4 p-5">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Nível" value={String(level)} />
+        <StatCard label="Nivel" value={String(level)} />
         <StatCard label="XP total" value={String(xp)} />
         <StatCard label="Moedas" value={String(coins)} />
         <StatCard label="Streak" value={`${streak} dia(s)`} />
@@ -21,7 +21,7 @@ export function ProfileStats({ level, xp, coins, streak, totalCases, accuracy }:
       <XPBar xp={xp} level={level} />
       <div className="grid gap-3 sm:grid-cols-2">
         <StatCard label="Casos jogados" value={String(totalCases)} />
-        <StatCard label="Precisão" value={`${Math.round(accuracy * 100)}%`} />
+        <StatCard label="Precisao" value={`${Math.round(accuracy * 100)}%`} />
       </div>
     </section>
   )
@@ -29,9 +29,9 @@ export function ProfileStats({ level, xp, coins, streak, totalCases, accuracy }:
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-surface-50 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="text-lg font-bold text-denim-600">{value}</p>
+    <div className="stat-tile p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">{label}</p>
+      <p className="text-lg font-bold text-[color:var(--text-strong)]">{value}</p>
     </div>
   )
 }

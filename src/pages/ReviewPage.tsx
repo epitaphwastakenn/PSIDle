@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { approvedCases } from '../data/cases'
-import { disorders } from '../data/disorders'
 import { RewardToast } from '../components/common/RewardToast'
 import { ReviewCard } from '../components/review/ReviewCard'
+import { approvedCases } from '../data/cases'
+import { disorders } from '../data/disorders'
 import { applyAchievementUnlocks } from '../lib/achievementEngine'
 import { awardCoins, awardXp } from '../lib/rewards'
 import { getDueReviewItems, gradeReviewItem } from '../lib/review'
@@ -62,19 +62,19 @@ export function ReviewPage() {
     progress = awardCoins(progress, achievementResult.rewardCoins)
     saveUserProgress(progress)
 
-    pushToast(`Revisão registrada. +${correct ? 40 : 20} XP${achievementResult.rewardXp ? ' + bônus de conquista' : ''}.`)
+    pushToast(`Revisao registrada. +${correct ? 40 : 20} XP${achievementResult.rewardXp ? ' + bonus de conquista' : ''}.`)
   }
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-title text-3xl text-denim-600">Revisão</h1>
-        <p className="text-sm text-slate-600">Itens errados voltam para revisão com repetição espaçada simples.</p>
+        <h1 className="page-title text-3xl">Revisao</h1>
+        <p className="page-subtitle text-sm">Itens errados retornam para consolidar memoria de longo prazo.</p>
       </div>
 
-      <section className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
-        <p className="text-sm text-slate-700">
-          Pendentes agora: <span className="font-semibold text-denim-600">{dueItems.length}</span>
+      <section className="panel p-4">
+        <p className="text-sm text-[color:var(--text-body)]">
+          Pendentes agora: <span className="font-semibold text-[color:var(--text-strong)]">{dueItems.length}</span>
         </p>
       </section>
 
@@ -87,8 +87,8 @@ export function ReviewPage() {
           onGrade={handleGrade}
         />
       ) : (
-        <section className="rounded-2xl border border-surface-200 bg-white p-5 text-sm text-slate-700 shadow-card">
-          Nenhum item de revisão vencido agora. Volte depois ou erre um caso no treino para gerar nova revisão.
+        <section className="panel p-5 text-sm text-[color:var(--text-body)]">
+          Nenhum item vencido agora. Jogue treino e finalize casos para alimentar sua fila de revisao.
         </section>
       )}
 

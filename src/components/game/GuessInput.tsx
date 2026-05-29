@@ -17,8 +17,8 @@ export function GuessInput({ value, options, disabled = false, onChange, onSubmi
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
-      <label htmlFor="guess-input" className="mb-2 block text-sm font-semibold text-slate-700">
+    <form onSubmit={handleSubmit} className="panel p-4">
+      <label htmlFor="guess-input" className="mb-2 block text-sm font-semibold text-[color:var(--text-body)]">
         Seu palpite
       </label>
       <div className="flex flex-col gap-3 md:flex-row">
@@ -28,14 +28,10 @@ export function GuessInput({ value, options, disabled = false, onChange, onSubmi
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Digite o transtorno em português"
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-800 outline-none transition focus:border-denim-400 focus:ring-2 focus:ring-denim-200 disabled:cursor-not-allowed disabled:bg-slate-100"
+          placeholder="Digite o transtorno em portugues"
+          className="field-input disabled:cursor-not-allowed disabled:opacity-70"
         />
-        <button
-          type="submit"
-          disabled={disabled}
-          className="rounded-xl bg-denim-600 px-5 py-2 font-semibold text-white transition hover:bg-denim-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
+        <button type="submit" disabled={disabled} className="btn-primary">
           Enviar
         </button>
       </div>

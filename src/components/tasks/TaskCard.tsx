@@ -9,32 +9,27 @@ export function TaskCard({ task, onClaim }: TaskCardProps) {
   const progressPercent = task.goal > 0 ? Math.round((task.progress / task.goal) * 100) : 0
 
   return (
-    <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
+    <article className="panel p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-semibold text-denim-600">{task.title}</h3>
-        <span className="text-xs font-semibold text-slate-500">
+        <h3 className="font-semibold text-[color:var(--text-strong)]">{task.title}</h3>
+        <span className="text-xs font-semibold text-[color:var(--text-muted)]">
           {task.progress}/{task.goal}
         </span>
       </div>
-      <p className="mt-2 text-sm text-slate-700">{task.description}</p>
+      <p className="mt-2 text-sm text-[color:var(--text-body)]">{task.description}</p>
 
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-200">
+      <div className="mt-3 h-2 overflow-hidden rounded-full border border-[color:var(--border-soft)] bg-[color:rgba(31,45,90,0.5)]">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-mint-500 to-denim-400 transition-all"
+          className="h-full rounded-full bg-gradient-to-r from-[#3bd7b0] via-[#5e8fff] to-[#8a6cff] transition-all"
           style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }}
         />
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-sm">
-        <p className="text-slate-600">
+      <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+        <p className="text-[color:var(--text-muted)]">
           +{task.rewardXp} XP | +{task.rewardCoins} moedas
         </p>
-        <button
-          type="button"
-          disabled={!task.completed || task.claimed}
-          onClick={() => onClaim(task.id)}
-          className="rounded-xl bg-denim-600 px-3 py-1.5 font-semibold text-white transition hover:bg-denim-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
+        <button type="button" disabled={!task.completed || task.claimed} onClick={() => onClaim(task.id)} className="btn-primary">
           {task.claimed ? 'Resgatada' : 'Resgatar'}
         </button>
       </div>

@@ -6,19 +6,19 @@ interface CaseCardProps {
 
 export function CaseCard({ caseData }: CaseCardProps) {
   const difficultyLabel: Record<Case['difficulty'], string> = {
-    easy: 'Fácil',
-    medium: 'Médio',
-    hard: 'Difícil',
+    easy: 'Facil',
+    medium: 'Media',
+    hard: 'Dificil',
   }
 
   return (
-    <article className="rounded-2xl border border-surface-200 bg-white p-5 shadow-card">
-      <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-        <span className="rounded-full bg-surface-100 px-3 py-1">{caseData.category}</span>
-        <span className="rounded-full bg-surface-100 px-3 py-1">{difficultyLabel[caseData.difficulty]}</span>
+    <article className="panel p-5 md:p-6">
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">
+        <span className="chip rounded-full px-3 py-1">{caseData.category}</span>
+        <span className="chip rounded-full px-3 py-1">{difficultyLabel[caseData.difficulty]}</span>
       </div>
-      <h2 className="font-title text-2xl text-denim-600">{caseData.title}</h2>
-      <p className="mt-3 leading-relaxed text-slate-700">{caseData.vignette}</p>
+      <h2 className="page-title text-2xl">{caseData.title}</h2>
+      <p className="mt-3 text-sm leading-relaxed text-[color:var(--text-body)] md:text-base">{caseData.vignette}</p>
     </article>
   )
 }

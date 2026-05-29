@@ -1,46 +1,53 @@
 import { Link } from 'react-router-dom'
-import { getUserProgress } from '../lib/storage'
 import { XPBar } from '../components/common/XPBar'
+import { getUserProgress } from '../lib/storage'
 
 export function HomePage() {
   const progress = getUserProgress()
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-        <h1 className="font-title text-4xl text-denim-600">PsiDle</h1>
-        <p className="mt-3 max-w-3xl leading-relaxed text-slate-700">
-          Jogo de estudo em psicologia e psicopatologia com casos clínicos fictícios. Analise a vinheta, teste hipóteses e
-          aprenda por diferenciação diagnóstica.
-        </p>
+    <div className="space-y-5">
+      <section className="panel overflow-hidden p-5 md:p-7">
+        <div className="grid gap-5 md:grid-cols-[1.25fr_0.75fr] md:items-center">
+          <div>
+            <h1 className="page-title text-3xl md:text-5xl">PsiDle</h1>
+            <p className="page-subtitle mt-3 max-w-2xl text-sm md:text-base">
+              Treine raciocinio em psicologia com casos ficticios. Leia, compare hipoteses, erre com qualidade e
+              evolua com revisao ativa.
+            </p>
 
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Link
-            to="/daily"
-            className="rounded-xl bg-denim-600 px-4 py-2 font-semibold text-white transition hover:bg-denim-500"
-          >
-            Jogar caso diário
-          </Link>
-          <Link
-            to="/practice"
-            className="rounded-xl bg-mint-500 px-4 py-2 font-semibold text-white transition hover:bg-mint-500/90"
-          >
-            Modo treino
-          </Link>
-          <Link
-            to="/review"
-            className="rounded-xl bg-peach-500 px-4 py-2 font-semibold text-white transition hover:bg-peach-500/90"
-          >
-            Revisão
-          </Link>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              <Link to="/daily" className="btn-primary text-center">
+                Jogar caso diario
+              </Link>
+              <Link to="/practice" className="btn-secondary text-center">
+                Modo treino
+              </Link>
+              <Link to="/review" className="btn-ghost text-center">
+                Revisao
+              </Link>
+            </div>
+          </div>
+
+          <div className="panel-soft p-4 md:p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">
+              Foco da sessao
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--text-body)]">
+              1 caso diario, treino filtrado por categoria/dificuldade e fila de revisao com repeticao espaçada.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+              <span className="chip rounded-full px-3 py-1">Casos ficticios</span>
+              <span className="chip rounded-full px-3 py-1">Estudo ativo</span>
+              <span className="chip rounded-full px-3 py-1">Sem diagnostico real</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-surface-200 bg-white p-5 shadow-card">
-        <h2 className="font-title text-2xl text-denim-600">Seu progresso</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Continue estudando para ganhar XP, moedas e manter sua sequência de dias.
-        </p>
+      <section className="panel p-5">
+        <h2 className="page-title text-xl md:text-2xl">Seu progresso</h2>
+        <p className="page-subtitle mt-1 text-sm">Continue estudando para subir nivel, ganhar moedas e manter streak.</p>
         <div className="mt-4">
           <XPBar xp={progress.xp} level={progress.level} />
         </div>

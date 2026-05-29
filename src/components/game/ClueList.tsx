@@ -8,9 +8,9 @@ interface ClueListProps {
 const clueTypeLabels: Record<CaseClue['type'], string> = {
   chief_complaint: 'Queixa principal',
   symptoms: 'Sintomas',
-  duration: 'Duração',
-  impairment: 'Prejuízo',
-  exclusion: 'Exclusão',
+  duration: 'Duracao',
+  impairment: 'Prejuizo',
+  exclusion: 'Exclusao',
   differential: 'Diferencial',
 }
 
@@ -21,20 +21,20 @@ export function ClueList({ clues, revealedCluesCount }: ClueListProps) {
 
   if (!visibleClues.length) {
     return (
-      <section className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
-        <h3 className="font-title text-xl text-denim-600">Pistas</h3>
-        <p className="mt-2 text-sm text-slate-600">Ainda sem pistas extras. Um erro libera a próxima dica.</p>
+      <section className="panel p-4">
+        <h3 className="page-title text-xl">Pistas</h3>
+        <p className="mt-2 text-sm text-[color:var(--text-muted)]">Ainda sem pistas extras. Um erro libera a proxima dica.</p>
       </section>
     )
   }
 
   return (
-    <section className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
-      <h3 className="font-title text-xl text-denim-600">Pistas reveladas</h3>
+    <section className="panel p-4">
+      <h3 className="page-title text-xl">Pistas reveladas</h3>
       <ul className="mt-3 space-y-3">
         {visibleClues.map((clue) => (
-          <li key={clue.id} className="rounded-xl bg-surface-50 px-3 py-2 text-sm text-slate-700">
-            <p className="font-semibold text-denim-600">{clueTypeLabels[clue.type]}</p>
+          <li key={clue.id} className="panel-soft px-3 py-2 text-sm text-[color:var(--text-body)]">
+            <p className="font-semibold text-[color:var(--text-strong)]">{clueTypeLabels[clue.type]}</p>
             <p>{clue.text}</p>
           </li>
         ))}

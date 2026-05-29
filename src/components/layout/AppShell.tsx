@@ -1,16 +1,25 @@
+import { useEffect, useState } from 'react'
 import type { PropsWithChildren } from 'react'
-import { DisclaimerBox } from '../common/DisclaimerBox'
+import { applyThemeToDocument, getSavedTheme, saveTheme, type ThemeMode } from '../../lib/theme'
 import { Footer } from './Footer'
 import { Navbar } from './Navbar'
 
 export function AppShell({ children }: PropsWithChildren) {
+  const [theme, setTheme] = useState<ThemeMode>(() => getSavedTheme())
+
+  useEffect(() => {
+    applyThemeToDocument(theme)
+    saveTheme(theme)
+  }, [theme])
+
+  function handleToggleTheme() {
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
+  }
+
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <div className="mx-auto w-full max-w-6xl px-4 pt-4">
-        <DisclaimerBox />
-      </div>
-      <main className="mx-auto w-full max-w-6xl px-4 py-6">{children}</main>
+    <div className="min-h-screen pb-6">
+      <Navbar theme={theme} onToggleTheme={handleToggleTheme} />
+      <main className="mx-auto w-full max-w-6xl px-4 py-4 md:py-6">{children}</main>
       <Footer />
     </div>
   )

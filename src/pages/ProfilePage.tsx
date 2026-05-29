@@ -1,6 +1,6 @@
-import { achievements } from '../data/achievements'
 import { AchievementGrid } from '../components/profile/AchievementGrid'
 import { ProfileStats } from '../components/profile/ProfileStats'
+import { achievements } from '../data/achievements'
 import { getUserProgress } from '../lib/storage'
 
 export function ProfilePage() {
@@ -12,8 +12,8 @@ export function ProfilePage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-title text-3xl text-denim-600">Perfil</h1>
-        <p className="text-sm text-slate-600">Acompanhe evolução de XP, acertos e conquistas.</p>
+        <h1 className="page-title text-3xl">Perfil</h1>
+        <p className="page-subtitle text-sm">Acompanhe nivel, acertos, streak e conquistas.</p>
       </div>
 
       <ProfileStats

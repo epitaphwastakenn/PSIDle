@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { disorders } from '../data/disorders'
 import { GameSession } from '../components/game/GameSession'
+import { disorders } from '../data/disorders'
 import { getTodayKey } from '../lib/daily'
 import { generateDailyProceduralCase } from '../lib/proceduralCases'
 import { getUserProgress } from '../lib/storage'
@@ -20,14 +20,13 @@ export function DailyPage() {
   }, [dailyCase.id, progress.attempts, todayKey])
 
   const alreadyPlayedToday = progress.lastPlayedDailyDate === todayKey && Boolean(latestDailyAttempt)
-
   const correctDisorder = disorders.find((disorder) => disorder.id === dailyCase.correctDisorderId)
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-title text-3xl text-denim-600">Caso diário</h1>
-        <p className="text-sm text-slate-600">Um caso fixo por dia para manter consistência de estudo.</p>
+        <h1 className="page-title text-3xl">Caso diario</h1>
+        <p className="page-subtitle text-sm">Um caso fixo por dia para manter consistencia de estudo.</p>
       </div>
 
       {alreadyPlayedToday && latestDailyAttempt ? (
@@ -41,22 +40,22 @@ export function DailyPage() {
 
 function DailyResultSummary({ attempt, correctDisorderName }: { attempt: Attempt; correctDisorderName: string }) {
   return (
-    <section className="rounded-2xl border border-surface-200 bg-white p-5 shadow-card">
-      <h2 className="font-title text-2xl text-denim-600">Você já jogou hoje</h2>
-      <p className="mt-2 text-slate-700">
-        Resultado salvo no navegador para hoje. Volte amanhã para um novo caso diário ou continue no modo treino.
+    <section className="panel p-5">
+      <h2 className="page-title text-xl">Voce ja jogou hoje</h2>
+      <p className="mt-2 text-sm text-[color:var(--text-body)]">
+        Resultado salvo no navegador. Volte amanha para um novo caso diario ou continue no modo treino.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Stat label="Acertou" value={attempt.solved ? 'Sim' : 'Não'} />
+        <Stat label="Acertou" value={attempt.solved ? 'Sim' : 'Nao'} />
         <Stat label="Score" value={String(attempt.score)} />
         <Stat label="Pistas usadas" value={String(attempt.cluesUsed)} />
       </div>
-      <p className="mt-4 text-sm text-slate-700">
-        Resposta correta: <span className="font-semibold text-denim-600">{correctDisorderName}</span>
+      <p className="mt-4 text-sm text-[color:var(--text-body)]">
+        Resposta correta: <span className="font-semibold text-[color:var(--text-strong)]">{correctDisorderName}</span>
       </p>
-      <div className="mt-3 rounded-xl bg-surface-50 p-3">
-        <p className="text-sm font-semibold text-slate-700">Palpites enviados</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+      <div className="panel-soft mt-3 p-3">
+        <p className="text-sm font-semibold text-[color:var(--text-strong)]">Palpites enviados</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[color:var(--text-body)]">
           {attempt.guesses.map((guess, index) => (
             <li key={`${guess}-${index}`}>{guess}</li>
           ))}
@@ -68,9 +67,9 @@ function DailyResultSummary({ attempt, correctDisorderName }: { attempt: Attempt
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-surface-50 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="text-lg font-bold text-denim-600">{value}</p>
+    <div className="stat-tile p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">{label}</p>
+      <p className="text-lg font-bold text-[color:var(--text-strong)]">{value}</p>
     </div>
   )
 }

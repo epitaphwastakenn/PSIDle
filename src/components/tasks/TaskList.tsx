@@ -9,8 +9,8 @@ interface TaskListProps {
 export function TaskList({ tasks, onClaim }: TaskListProps) {
   if (!tasks.length) {
     return (
-      <section className="rounded-2xl border border-surface-200 bg-white p-4 text-sm text-slate-700 shadow-card">
-        Nenhuma tarefa disponível no momento.
+      <section className="panel p-4 text-sm text-[color:var(--text-body)]">
+        Nenhuma tarefa disponivel no momento.
       </section>
     )
   }

@@ -10,7 +10,7 @@ export function AchievementGrid({ achievements, unlockedIds }: AchievementGridPr
 
   return (
     <section className="space-y-3">
-      <h2 className="font-title text-2xl text-denim-600">Conquistas</h2>
+      <h2 className="page-title text-2xl">Conquistas</h2>
       <div className="grid gap-3 md:grid-cols-2">
         {achievements.map((achievement) => {
           const isUnlocked = unlocked.has(achievement.id)
@@ -18,15 +18,13 @@ export function AchievementGrid({ achievements, unlockedIds }: AchievementGridPr
             <article
               key={achievement.id}
               className={[
-                'rounded-2xl border p-4 shadow-card transition',
-                isUnlocked
-                  ? 'border-mint-500 bg-mint-200/40'
-                  : 'border-surface-200 bg-white opacity-80 grayscale-[0.25]',
+                'panel p-4 transition',
+                isUnlocked ? 'glow-outline' : 'opacity-75 saturate-50',
               ].join(' ')}
             >
-              <p className="text-sm font-bold text-denim-600">{achievement.title}</p>
-              <p className="mt-1 text-sm text-slate-700">{achievement.description}</p>
-              <p className="mt-2 text-xs font-semibold text-slate-600">
+              <p className="text-sm font-bold text-[color:var(--text-strong)]">{achievement.title}</p>
+              <p className="mt-1 text-sm text-[color:var(--text-body)]">{achievement.description}</p>
+              <p className="mt-2 text-xs font-semibold text-[color:var(--text-muted)]">
                 +{achievement.rewardXp} XP | +{achievement.rewardCoins} moedas
               </p>
             </article>

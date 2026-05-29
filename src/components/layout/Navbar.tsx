@@ -1,31 +1,39 @@
 import { NavLink } from 'react-router-dom'
+import type { ThemeMode } from '../../lib/theme'
 
 const links = [
-  { to: '/', label: 'Início' },
-  { to: '/daily', label: 'Caso Diário' },
+  { to: '/', label: 'Inicio' },
+  { to: '/daily', label: 'Caso diario' },
   { to: '/practice', label: 'Treino' },
-  { to: '/review', label: 'Revisão' },
+  { to: '/review', label: 'Revisao' },
   { to: '/tasks', label: 'Tarefas' },
   { to: '/profile', label: 'Perfil' },
   { to: '/about', label: 'Sobre' },
 ]
 
 function getLinkClass(isActive: boolean): string {
-  return [
-    'rounded-full px-3 py-1.5 text-sm font-semibold transition-colors',
-    isActive ? 'bg-denim-600 text-white' : 'text-denim-600 hover:bg-denim-100',
-  ].join(' ')
+  return isActive ? 'top-nav-link top-nav-link-active' : 'top-nav-link'
 }
 
-export function Navbar() {
+interface NavbarProps {
+  theme: ThemeMode
+  onToggleTheme: () => void
+}
+
+export function Navbar({ theme, onToggleTheme }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-30 border-b border-surface-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <header className="sticky top-0 z-30 border-b border-[color:var(--border-soft)] bg-[color:rgba(10,14,34,0.8)] backdrop-blur-md">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3">
         <div>
-          <p className="font-title text-2xl text-denim-600">PsiDle</p>
-          <p className="text-xs text-slate-500">Estudo de psicologia em formato de jogo</p>
+          <p className="page-title text-xl md:text-2xl">PsiDle</p>
+          <p className="page-subtitle text-xs">Estudo de psicologia em formato de jogo</p>
         </div>
-        <nav className="flex flex-wrap justify-end gap-1">
+        <button type="button" className="theme-toggle btn-ghost px-3 py-2 text-xs md:text-sm" onClick={onToggleTheme}>
+          {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+        </button>
+      </div>
+      <div className="mx-auto w-full max-w-6xl px-4 pb-3">
+        <nav className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1">
           {links.map((link) => (
             <NavLink key={link.to} to={link.to} className={({ isActive }) => getLinkClass(isActive)}>
               {link.label}

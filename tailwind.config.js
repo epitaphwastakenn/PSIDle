@@ -5,26 +5,37 @@ export default {
     extend: {
       colors: {
         surface: {
-          50: '#fffefb',
-          100: '#fff8ee',
-          200: '#ffeecf',
+          50: '#131a34',
+          100: '#182347',
+          200: '#26345f',
         },
         peach: {
-          300: '#f8c9a4',
-          500: '#ef9f6a',
+          300: '#ff9ac3',
+          500: '#ff6b9d',
         },
         mint: {
-          200: '#cbe9de',
-          500: '#66ab8f',
+          200: '#9ff8d3',
+          500: '#3dd9a6',
         },
         denim: {
-          400: '#5f82b9',
-          600: '#2f507c',
+          400: '#5d90ff',
+          500: '#4a7bff',
+          600: '#355de6',
+        },
+        night: {
+          950: '#070a18',
+          900: '#0b1024',
+          800: '#121a39',
+        },
+        aura: {
+          500: '#8a6cff',
+          400: '#a38dff',
+          300: '#c2b3ff',
         },
       },
       fontFamily: {
-        body: ['Nunito', 'Trebuchet MS', 'sans-serif'],
-        title: ['Bree Serif', 'Georgia', 'serif'],
+        body: ['Plus Jakarta Sans', 'Segoe UI', 'sans-serif'],
+        title: ['Sora', 'Plus Jakarta Sans', 'sans-serif'],
       },
       keyframes: {
         fadeUp: {
@@ -36,7 +47,8 @@ export default {
         fadeUp: 'fadeUp 260ms ease-out both',
       },
       boxShadow: {
-        card: '0 8px 24px rgba(90, 80, 58, 0.08)',
+        card: '0 16px 40px rgba(2, 6, 24, 0.45)',
+        glow: '0 0 0 1px rgba(167, 139, 250, 0.45), 0 0 22px rgba(59, 130, 246, 0.4)',
       },
     },
   },

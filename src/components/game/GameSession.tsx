@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { disorders } from '../../data/disorders'
 import type { Attempt, Case } from '../../types/models'
 import { applyAchievementUnlocks } from '../../lib/achievementEngine'
@@ -232,7 +232,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     })
     saveReviewItems(reviewItems)
     setReviewAdded(true)
-    pushToast('Caso adicionado à fila de revisão.')
+    pushToast('Caso adicionado a fila de revisao.')
   }
 
   function handleReviewExplanation() {
@@ -253,13 +253,13 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       ...result,
       xpGained: result.xpGained + 20,
     })
-    pushToast('+20 XP por revisar a explicação.')
+    pushToast('+20 XP por revisar a explicacao.')
   }
 
   if (!correctDisorder) {
     return (
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        Não foi possível carregar o caso.
+      <section className="panel p-4 text-sm text-[color:var(--danger)]">
+        Nao foi possivel carregar o caso.
       </section>
     )
   }
@@ -300,3 +300,5 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     </div>
   )
 }
+
+
