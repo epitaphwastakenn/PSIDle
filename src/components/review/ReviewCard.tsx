@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { audioManager } from '../../lib/audio'
 import type { Case, ReviewItem } from '../../types/models'
 import { FeedbackBurst } from '../common/FeedbackBurst'
@@ -13,13 +13,6 @@ interface ReviewCardProps {
 export function ReviewCard({ item, caseData, correctDisorderName, onGrade }: ReviewCardProps) {
   const [guess, setGuess] = useState('')
   const [revealed, setRevealed] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (!revealed) {
-      inputRef.current?.focus()
-    }
-  }, [item.id, revealed])
 
   function handleGuessChange(nextValue: string) {
     if (nextValue.length > guess.length) {
@@ -52,7 +45,6 @@ export function ReviewCard({ item, caseData, correctDisorderName, onGrade }: Rev
               </label>
               <input
                 id={`review-guess-${item.id}`}
-                ref={inputRef}
                 value={guess}
                 onChange={(event) => handleGuessChange(event.target.value)}
                 placeholder="Digite seu palpite"

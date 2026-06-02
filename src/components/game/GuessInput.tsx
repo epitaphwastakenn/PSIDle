@@ -1,4 +1,3 @@
-﻿import { useEffect, useRef } from 'react'
 import type { FormEvent } from 'react'
 import { audioManager } from '../../lib/audio'
 import { FeedbackBurst } from '../common/FeedbackBurst'
@@ -28,21 +27,6 @@ export function GuessInput({
 }: GuessInputProps) {
   const listId = 'disorder-options'
   const hasFeedback = feedbackType !== 'idle' && Boolean(feedbackMessage)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (disabled) {
-      return
-    }
-
-    inputRef.current?.focus()
-  }, [disabled])
-
-  useEffect(() => {
-    if (feedbackType === 'wrong' && !disabled) {
-      inputRef.current?.focus()
-    }
-  }, [feedbackType, disabled])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -90,13 +74,12 @@ export function GuessInput({
       </div>
 
       <p className="page-subtitle mt-2 text-sm leading-relaxed">
-        Digite o transtorno em portugues. O campo permanece focado para manter o ritmo da sessao.
+        Digite o transtorno em portugues quando quiser testar seu raciocinio.
       </p>
 
       <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-stretch">
         <input
           id="guess-input"
-          ref={inputRef}
           list={listId}
           value={value}
           disabled={disabled}
