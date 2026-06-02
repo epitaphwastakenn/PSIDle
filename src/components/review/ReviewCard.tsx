@@ -30,68 +30,80 @@ export function ReviewCard({ item, caseData, correctDisorderName, onGrade }: Rev
   }
 
   return (
-    <article className="panel panel-motion relative overflow-hidden p-5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">{caseData.category}</p>
-      <h3 className="page-title mt-1 text-2xl">{caseData.title}</h3>
-      <p className="mt-3 text-sm leading-relaxed text-[color:var(--text-body)] md:text-base">{caseData.vignette}</p>
-
-      {!revealed ? (
-        <div className="mt-4 space-y-3">
-          <label htmlFor={`review-guess-${item.id}`} className="block text-sm font-semibold text-[color:var(--text-body)]">
-            Seu palpite antes da resposta
-          </label>
-          <input
-            id={`review-guess-${item.id}`}
-            ref={inputRef}
-            value={guess}
-            onChange={(event) => handleGuessChange(event.target.value)}
-            placeholder="Digite seu palpite"
-            className="field-input"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              audioManager.playClick()
-              setRevealed(true)
-            }}
-            className="btn-primary"
-          >
-            Mostrar resposta
-          </button>
-        </div>
-      ) : (
-        <div className="clue-reveal panel-soft relative mt-4 overflow-hidden p-3">
-          <FeedbackBurst key={`review-reveal-${item.id}`} variant="review" density="soft" />
-          <p className="text-sm text-[color:var(--text-body)]">
-            Seu palpite: <span className="font-semibold text-[color:var(--text-strong)]">{guess || 'Nao informado'}</span>
-          </p>
-          <p className="mt-2 text-sm text-[color:var(--text-body)]">
-            Resposta correta: <span className="font-semibold text-[color:var(--text-strong)]">{correctDisorderName}</span>
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                audioManager.playClick()
-                onGrade(item.id, true, guess)
-              }}
-              className="btn-success"
-            >
-              Acertei
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                audioManager.playClick()
-                onGrade(item.id, false, guess)
-              }}
-              className="btn-danger"
-            >
-              Errei
-            </button>
+    <article className="panel review-card relative overflow-hidden p-4 md:p-5">
+      <div className="review-card-grid">
+        <div>
+          <p className="case-eyebrow">{caseData.category}</p>
+          <h3 className="page-title mt-2 text-2xl">{caseData.title}</h3>
+          <div className="case-reading-surface mt-4 p-4">
+            <p className="text-sm leading-relaxed text-[color:var(--text-body)] md:text-base">{caseData.vignette}</p>
           </div>
         </div>
-      )}
+
+        <div className="review-answer-panel">
+          {!revealed ? (
+            <div className="space-y-3">
+              <div>
+                <p className="filter-label">Flashcard</p>
+                <p className="filter-caption">Tente lembrar antes de revelar a resposta.</p>
+              </div>
+              <label htmlFor={`review-guess-${item.id}`} className="block text-sm font-semibold text-[color:var(--text-body)]">
+                Seu palpite
+              </label>
+              <input
+                id={`review-guess-${item.id}`}
+                ref={inputRef}
+                value={guess}
+                onChange={(event) => handleGuessChange(event.target.value)}
+                placeholder="Digite seu palpite"
+                className="field-input"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  audioManager.playClick()
+                  setRevealed(true)
+                }}
+                className="btn-primary w-full"
+              >
+                Mostrar resposta
+              </button>
+            </div>
+          ) : (
+            <div className="clue-reveal relative overflow-hidden">
+              <FeedbackBurst key={`review-reveal-${item.id}`} variant="review" density="soft" />
+              <p className="text-sm text-[color:var(--text-body)]">
+                Seu palpite: <span className="font-semibold text-[color:var(--text-strong)]">{guess || 'Nao informado'}</span>
+              </p>
+              <p className="mt-2 text-sm text-[color:var(--text-body)]">
+                Resposta correta: <span className="font-semibold text-[color:var(--text-strong)]">{correctDisorderName}</span>
+              </p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    audioManager.playClick()
+                    onGrade(item.id, true, guess)
+                  }}
+                  className="btn-success"
+                >
+                  Acertei
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    audioManager.playClick()
+                    onGrade(item.id, false, guess)
+                  }}
+                  className="btn-danger"
+                >
+                  Errei
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </article>
   )
 }

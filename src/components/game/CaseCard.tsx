@@ -1,4 +1,4 @@
-import type { Case } from '../../types/models'
+﻿import type { Case } from '../../types/models'
 
 interface CaseCardProps {
   caseData: Case
@@ -12,13 +12,24 @@ export function CaseCard({ caseData }: CaseCardProps) {
   }
 
   return (
-    <article className="panel panel-motion p-5 md:p-6">
-      <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">
-        <span className="chip rounded-full px-3 py-1">{caseData.category}</span>
-        <span className="chip rounded-full px-3 py-1">{difficultyLabel[caseData.difficulty]}</span>
+    <article className="panel panel-motion case-stage p-5 md:p-6">
+      <div className="case-stage-top">
+        <div>
+          <p className="case-eyebrow">Vinheta clinica</p>
+          <h2 className="page-title mt-2 text-2xl md:text-3xl">{caseData.title}</h2>
+        </div>
+        <div className="case-badge-row">
+          <span className="chip case-chip rounded-full px-3 py-1">{caseData.category}</span>
+          <span className="chip case-chip rounded-full px-3 py-1">{difficultyLabel[caseData.difficulty]}</span>
+        </div>
       </div>
-      <h2 className="page-title text-2xl">{caseData.title}</h2>
-      <p className="mt-3 text-sm leading-relaxed text-[color:var(--text-body)] md:text-base">{caseData.vignette}</p>
+
+      <div className="case-reading-surface mt-4 p-4 md:p-5">
+        <p className="case-reading-copy text-sm leading-7 text-[color:var(--text-body)] md:text-[1.02rem]">
+          {caseData.vignette}
+        </p>
+      </div>
     </article>
   )
 }
+

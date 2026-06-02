@@ -23,7 +23,7 @@ export function AppShell({ children }: PropsWithChildren) {
       <Navbar theme={theme} onToggleTheme={handleToggleTheme} />
       <main
         key={`${location.pathname}${location.search}`}
-        className="page-motion mx-auto w-full max-w-6xl flex-1 px-4 py-4 md:py-6"
+        className="page-motion page-shell mx-auto w-full max-w-7xl flex-1 px-4 py-5 md:px-5 md:py-7 xl:px-6"
       >
         {children}
       </main>

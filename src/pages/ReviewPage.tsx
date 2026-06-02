@@ -54,6 +54,8 @@ export function ReviewPage() {
   const correctDisorder = currentItem
     ? disorders.find((disorder) => disorder.id === currentItem.correctDisorderId)
     : undefined
+  const totalItems = items.length
+  const masteredItems = items.filter((item) => item.status === 'mastered').length
 
   function pushToast(
     message: string,
@@ -121,15 +123,36 @@ export function ReviewPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="page-title text-3xl">Revisao</h1>
-        <p className="page-subtitle text-sm">Itens errados retornam para consolidar memoria de longo prazo.</p>
-      </div>
+      <section className="panel review-hero p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <span className="hero-kicker">Revisao</span>
+            <h1 className="page-title mt-2 text-3xl">Fila de estudo ativo</h1>
+            <p className="page-subtitle mt-2 max-w-2xl text-sm">
+              Casos perdidos retornam com espacamento simples para consolidar diferencas clinicas importantes.
+            </p>
+          </div>
+          <div className="review-metric-grid">
+            <div className="mini-stat">
+              <span className="mini-stat-label">Pendentes</span>
+              <span className="mini-stat-value">{dueItems.length}</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">Revisados</span>
+              <span className="mini-stat-value">{reviewedItems.length}</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">Dominados</span>
+              <span className="mini-stat-value">{masteredItems}</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <section className="panel p-4">
+      <section className="panel review-control-panel p-3 md:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-[color:var(--text-body)]">
-            Pendentes agora: <span className="font-semibold text-[color:var(--text-strong)]">{dueItems.length}</span>
+          <p className="filter-caption mt-0">
+            Total na revisao: <span className="font-semibold text-[color:var(--text-strong)]">{totalItems}</span>
           </p>
           <div className="review-tabs" role="tablist" aria-label="Secoes de revisao">
             <button
@@ -139,7 +162,7 @@ export function ReviewPage() {
               role="tab"
               aria-selected={activeTab === 'due'}
             >
-              Fila
+              Fila ({dueItems.length})
             </button>
             <button
               type="button"
@@ -148,7 +171,7 @@ export function ReviewPage() {
               role="tab"
               aria-selected={activeTab === 'reviewed'}
             >
-              Casos revisados
+              Casos revisados ({reviewedItems.length})
             </button>
           </div>
         </div>
@@ -165,8 +188,12 @@ export function ReviewPage() {
               onGrade={handleGrade}
             />
           ) : (
-            <section className="panel p-5 text-sm text-[color:var(--text-body)]">
-              Nenhum item vencido agora. Adicione casos manualmente ou finalize tentativas erradas para alimentar sua fila.
+            <section className="panel empty-state-card p-6 text-sm text-[color:var(--text-body)]">
+              <span className="empty-state-icon">OK</span>
+              <h2 className="page-title mt-3 text-2xl">Nada vencido agora</h2>
+              <p className="mt-2 max-w-xl">
+                Finalize tentativas erradas ou adicione casos manualmente para alimentar sua fila de revisao.
+              </p>
             </section>
           )
         ) : (
@@ -189,14 +216,16 @@ export function ReviewPage() {
 function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
   if (!items.length) {
     return (
-      <section className="panel p-5 text-sm text-[color:var(--text-body)]">
-        Nenhum caso revisado ainda. Revise um item da fila para criar seu historico de estudo.
+      <section className="panel empty-state-card p-6 text-sm text-[color:var(--text-body)]">
+        <span className="empty-state-icon">0</span>
+        <h2 className="page-title mt-3 text-2xl">Historico vazio</h2>
+        <p className="mt-2 max-w-xl">Revise um item da fila para criar um arquivo de estudo dos seus erros e acertos.</p>
       </section>
     )
   }
 
   return (
-    <section className="grid gap-4">
+    <section className="review-history-grid">
       {items.map((item) => {
         const caseData = approvedCases.find((caseItem) => caseItem.id === item.caseId) ?? item.caseSnapshot
         const correctDisorder = disorders.find((disorder) => disorder.id === item.correctDisorderId)
@@ -204,7 +233,7 @@ function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
         const usedClues = caseData?.clues.slice(0, cluesUsed) ?? []
 
         return (
-          <article key={item.id} className="panel panel-motion p-5">
+          <article key={item.id} className="panel review-history-card p-4 md:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">
@@ -212,7 +241,7 @@ function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
                 </p>
                 <h2 className="page-title mt-1 text-xl">{caseData?.title ?? item.caseId}</h2>
               </div>
-              <span className="chip rounded-full px-3 py-1 text-xs font-semibold">
+              <span className={item.reviewHistory?.[0]?.correct ? 'review-status-chip review-status-success' : 'review-status-chip review-status-warning'}>
                 {item.reviewHistory?.[0]?.correct ? 'Ultima revisao: acerto' : 'Ultima revisao: erro'}
               </span>
             </div>
@@ -222,7 +251,7 @@ function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
             ) : null}
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="panel-soft p-3">
+              <div className="review-detail-box">
                 <p className="text-sm font-semibold text-[color:var(--text-strong)]">Respostas dadas na partida</p>
                 {item.originalGuesses?.length ? (
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[color:var(--text-body)]">
@@ -235,7 +264,7 @@ function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
                 )}
               </div>
 
-              <div className="panel-soft p-3">
+              <div className="review-detail-box">
                 <p className="text-sm font-semibold text-[color:var(--text-strong)]">Resposta correta</p>
                 <p className="mt-2 text-sm text-[color:var(--text-body)]">{correctDisorder?.namePt ?? item.correctDisorderId}</p>
                 <p className="mt-2 text-xs text-[color:var(--text-muted)]">Pistas usadas: {cluesUsed}</p>
@@ -243,7 +272,7 @@ function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
             </div>
 
             {usedClues.length ? (
-              <div className="panel-soft mt-3 p-3">
+              <div className="review-detail-box mt-3">
                 <p className="text-sm font-semibold text-[color:var(--text-strong)]">Pistas usadas</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[color:var(--text-body)]">
                   {usedClues.map((clue) => (
@@ -253,7 +282,7 @@ function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
               </div>
             ) : null}
 
-            <div className="panel-soft mt-3 p-3">
+            <div className="review-detail-box mt-3">
               <p className="text-sm font-semibold text-[color:var(--text-strong)]">Historico de revisao</p>
               <ul className="mt-2 space-y-1 text-sm text-[color:var(--text-body)]">
                 {(item.reviewHistory ?? []).map((entry) => (

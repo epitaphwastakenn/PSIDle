@@ -385,43 +385,86 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       ? `Erros no caso diario: ${wrongGuessesCount}/${DAILY_MAX_ERRORS} (maximo de ${DAILY_MAX_ERRORS})`
       : undefined
 
+  const guessesRemaining = Math.max(0, maxWrongGuessesAllowed - wrongGuessesCount)
+  const clueProgressLabel = `${revealedCluesCount}/${caseData.clues.length}`
+  const modeLabel = mode === 'daily' ? 'Caso diario' : 'Modo treino'
+  const difficultyLabel: Record<Case['difficulty'], string> = {
+    easy: 'Facil',
+    medium: 'Media',
+    hard: 'Dificil',
+  }
+
   return (
-    <div className="space-y-4">
-      <CaseCard caseData={caseData} />
-      <GuessInput
-        value={selectedGuess}
-        options={disorders.map((disorder) => disorder.namePt)}
-        disabled={completed}
-        helperText={dailyHelperText}
-        feedbackType={guessFeedback.type}
-        feedbackMessage={guessFeedback.message}
-        feedbackPulseKey={guessFeedbackKey}
-        onChange={setSelectedGuess}
-        onSubmit={handleSubmitGuess}
-      />
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <ClueList clues={caseData.clues} revealedCluesCount={revealedCluesCount} />
-        <AttemptHistory guesses={guesses} />
-      </div>
-
-      {result ? (
-        <div ref={resultRef} className="result-anchor">
-          <ResultPanel
-            solved={solved}
-            score={result.score}
-            correctDisorderName={correctDisorder.namePt}
-            explanation={caseData.explanation}
-            differentials={differentialItems}
-            xpGained={result.xpGained}
-            coinsGained={result.coinsGained}
-            onAddToReview={handleAddToReview}
-            onReviewExplanation={handleReviewExplanation}
-            addedToReview={reviewAdded}
-            explanationReviewed={explanationReviewed}
-          />
+    <div className="space-y-5">
+      <section className="panel session-hero p-4 md:p-5">
+        <div className="session-hero-grid">
+          <div>
+            <p className="session-eyebrow">{modeLabel}</p>
+            <h2 className="page-title mt-2 text-2xl md:text-3xl">Foco da rodada</h2>
+            <p className="page-subtitle mt-2 text-sm leading-relaxed">
+              Leia a vinheta, identifique o nucleo do quadro e acompanhe pistas, palpites e resultado em um fluxo unico.
+            </p>
+          </div>
+          <div className="session-stat-grid">
+            <div className="mini-stat">
+              <span className="mini-stat-label">Categoria</span>
+              <span className="mini-stat-value text-base md:text-lg">{caseData.category}</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">Dificuldade</span>
+              <span className="mini-stat-value text-base md:text-lg">{difficultyLabel[caseData.difficulty]}</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">{mode === 'daily' ? 'Erros restantes' : 'Tentativas restantes'}</span>
+              <span className="mini-stat-value text-base md:text-lg">{guessesRemaining}</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-stat-label">Pistas abertas</span>
+              <span className="mini-stat-value text-base md:text-lg">{clueProgressLabel}</span>
+            </div>
+          </div>
         </div>
-      ) : null}
+      </section>
+
+      <div className="game-layout-grid">
+        <div className="space-y-4">
+          <CaseCard caseData={caseData} />
+          <GuessInput
+            value={selectedGuess}
+            options={disorders.map((disorder) => disorder.namePt)}
+            disabled={completed}
+            helperText={dailyHelperText}
+            feedbackType={guessFeedback.type}
+            feedbackMessage={guessFeedback.message}
+            feedbackPulseKey={guessFeedbackKey}
+            onChange={setSelectedGuess}
+            onSubmit={handleSubmitGuess}
+          />
+
+          {result ? (
+            <div ref={resultRef} className="result-anchor">
+              <ResultPanel
+                solved={solved}
+                score={result.score}
+                correctDisorderName={correctDisorder.namePt}
+                explanation={caseData.explanation}
+                differentials={differentialItems}
+                xpGained={result.xpGained}
+                coinsGained={result.coinsGained}
+                onAddToReview={handleAddToReview}
+                onReviewExplanation={handleReviewExplanation}
+                addedToReview={reviewAdded}
+                explanationReviewed={explanationReviewed}
+              />
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="space-y-4">
+          <ClueList clues={caseData.clues} revealedCluesCount={revealedCluesCount} />
+          <AttemptHistory guesses={guesses} />
+        </aside>
+      </div>
 
       <RewardToast
         key={toastKey}

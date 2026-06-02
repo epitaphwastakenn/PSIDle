@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+﻿import { useEffect, useRef } from 'react'
 import type { FormEvent } from 'react'
 import { audioManager } from '../../lib/audio'
 import { FeedbackBurst } from '../common/FeedbackBurst'
@@ -62,7 +62,7 @@ export function GuessInput({
     <form
       onSubmit={handleSubmit}
       className={[
-        'panel panel-motion relative overflow-hidden p-4 transition',
+        'panel panel-motion guess-shell relative overflow-hidden p-4 md:p-5 transition',
         feedbackType === 'correct'
           ? 'feedback-correct ring-2 ring-[color:rgba(59,215,176,0.75)] bg-[color:rgba(59,215,176,0.06)]'
           : '',
@@ -78,10 +78,22 @@ export function GuessInput({
           variant={feedbackType === 'correct' ? 'success' : 'danger'}
         />
       ) : null}
-      <label htmlFor="guess-input" className="mb-2 block text-sm font-semibold text-[color:var(--text-body)]">
-        Seu palpite
-      </label>
-      <div className="flex flex-col gap-3 md:flex-row">
+
+      <div className="guess-header-row">
+        <div>
+          <p className="guess-eyebrow">Seu raciocinio</p>
+          <label htmlFor="guess-input" className="page-title mt-1 block text-xl md:text-2xl">
+            Qual e o melhor palpite agora?
+          </label>
+        </div>
+        <span className="guess-status-chip">{disabled ? 'Sessao concluida' : 'Resposta aberta'}</span>
+      </div>
+
+      <p className="page-subtitle mt-2 text-sm leading-relaxed">
+        Digite o transtorno em portugues. O campo permanece focado para manter o ritmo da sessao.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-stretch">
         <input
           id="guess-input"
           ref={inputRef}
@@ -91,27 +103,31 @@ export function GuessInput({
           onChange={(event) => handleInputChange(event.target.value)}
           placeholder="Digite o transtorno em portugues"
           className={[
-            'field-input disabled:cursor-not-allowed disabled:opacity-70',
+            'field-input guess-field min-w-0 disabled:cursor-not-allowed disabled:opacity-70',
             feedbackType === 'correct' ? 'border-[color:rgba(59,215,176,0.8)]' : '',
             feedbackType === 'wrong' ? 'border-[color:rgba(255,111,159,0.8)]' : '',
           ].join(' ')}
         />
-        <button type="submit" disabled={disabled} className="btn-primary">
-          Enviar
+        <button type="submit" disabled={disabled} className="btn-primary guess-submit-btn">
+          Enviar resposta
         </button>
       </div>
+
       <datalist id={listId}>
         {options.map((option) => (
           <option key={option} value={option} />
         ))}
       </datalist>
 
-      {helperText ? <p className="mt-3 text-xs text-[color:var(--text-muted)]">{helperText}</p> : null}
+      <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        {helperText ? <p className="text-xs text-[color:var(--text-muted)]">{helperText}</p> : <span />}
+        <p className="text-xs font-medium text-[color:var(--text-muted)]">Sugestao: pense no nucleo do caso, nao em palavras isoladas.</p>
+      </div>
 
       {hasFeedback ? (
         <p
           className={[
-            'mt-2 rounded-lg border px-3 py-2 text-sm font-semibold',
+            'mt-3 rounded-2xl border px-3 py-3 text-sm font-semibold',
             feedbackType === 'correct'
               ? 'feedback-correct border-[color:rgba(59,215,176,0.6)] bg-[color:rgba(59,215,176,0.16)] text-[color:var(--text-strong)]'
               : '',
@@ -129,3 +145,4 @@ export function GuessInput({
     </form>
   )
 }
+

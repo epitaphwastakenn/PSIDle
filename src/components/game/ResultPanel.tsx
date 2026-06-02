@@ -1,4 +1,4 @@
-import { FeedbackBurst } from '../common/FeedbackBurst'
+﻿import { FeedbackBurst } from '../common/FeedbackBurst'
 import { DifferentialList } from './DifferentialList'
 
 interface ResultPanelProps {
@@ -31,37 +31,53 @@ export function ResultPanel({
   return (
     <section
       className={[
-        'panel reward-flash result-panel relative overflow-hidden p-5',
+        'panel reward-flash result-panel relative overflow-hidden p-5 md:p-6',
         solved ? 'result-panel-success' : 'result-panel-failure',
       ].join(' ')}
     >
-      <FeedbackBurst key={`${solved ? 'success' : 'failure'}-${correctDisorderName}-${score}`} variant={solved ? 'success' : 'review'} density={solved ? 'full' : 'soft'} />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="page-title text-2xl">{solved ? 'Resposta correta' : 'Fim da tentativa'}</h3>
-        <div className="flex flex-wrap items-center gap-2">
+      <FeedbackBurst
+        key={`${solved ? 'success' : 'failure'}-${correctDisorderName}-${score}`}
+        variant={solved ? 'success' : 'review'}
+        density={solved ? 'full' : 'soft'}
+      />
+
+      <div className="result-header-row">
+        <div>
+          <p className="result-kicker">{solved ? 'Acerto confirmado' : 'Tentativa concluida'}</p>
+          <h3 className="page-title mt-2 text-2xl md:text-3xl">{solved ? 'Resposta correta' : 'Hora de revisar o caso'}</h3>
+        </div>
+        <div className="result-chip-stack">
           <span className="chip rounded-full px-3 py-1 text-sm font-semibold">{solved ? 'Caso resolvido' : 'Entrou em revisao'}</span>
-          <span className="chip rounded-full px-3 py-1 text-sm font-semibold">Score: {score}</span>
+          <span className="chip rounded-full px-3 py-1 text-sm font-semibold">Score {score}</span>
         </div>
       </div>
 
-      <p className="mt-3 text-sm text-[color:var(--text-body)] md:text-base">
-        Diagnostico mais provavel do caso ficticio:{' '}
-        <span className="font-semibold text-[color:var(--text-strong)]">{correctDisorderName}</span>
-      </p>
-      <p className="panel-soft mt-3 p-3 text-sm leading-relaxed text-[color:var(--text-body)]">{explanation}</p>
+      <div className="result-answer-surface mt-4 p-4 md:p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Hipotese mais provavel</p>
+        <p className="page-title mt-2 text-2xl md:text-[2rem]">{correctDisorderName}</p>
+        <p className="page-subtitle mt-3 text-sm leading-relaxed md:text-base">{explanation}</p>
+      </div>
 
-      <div className="mt-4">
+      <div className="result-meta-grid mt-4">
+        <div className="mini-stat">
+          <span className="mini-stat-label">Score</span>
+          <span className="mini-stat-value">{score}</span>
+        </div>
+        <div className="mini-stat">
+          <span className="mini-stat-label">XP</span>
+          <span className="mini-stat-value">+{xpGained}</span>
+        </div>
+        <div className="mini-stat">
+          <span className="mini-stat-label">Moedas</span>
+          <span className="mini-stat-value">+{coinsGained}</span>
+        </div>
+      </div>
+
+      <div className="mt-5">
         <DifferentialList items={differentials} />
       </div>
 
-      <div className="reward-flash panel-soft result-reward-strip mt-4 p-3 text-sm text-[color:var(--text-body)]">
-        <p className="font-semibold text-[color:var(--text-strong)]">Recompensas da partida</p>
-        <p>
-          +{xpGained} XP | +{coinsGained} moedas
-        </p>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="result-action-row mt-5">
         <button type="button" onClick={onAddToReview} disabled={addedToReview} className="btn-ghost">
           {addedToReview ? 'Adicionado a revisao' : 'Adicionar a revisao'}
         </button>
@@ -72,3 +88,4 @@ export function ResultPanel({
     </section>
   )
 }
+

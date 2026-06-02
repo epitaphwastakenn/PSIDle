@@ -104,113 +104,136 @@ export function SettingsPanel({ initialSettings }: SettingsPanelProps) {
   }
 
   return (
-    <section className="panel p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title text-3xl">Configuracoes</h1>
-          <p className="page-subtitle mt-1 text-sm">Ajuste audio e conforto da experiencia.</p>
+    <section className="settings-page space-y-4">
+      <div className="panel settings-hero p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <span className="hero-kicker">Config</span>
+            <h1 className="page-title mt-2 text-3xl">Ajustes de audio</h1>
+            <p className="page-subtitle mt-2 max-w-2xl text-sm">
+              Controle sons de resposta, digitacao e interface sem recarregar a pagina.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => applySettings({ soundEnabled: !settings.soundEnabled })}
+            className={settings.soundEnabled ? 'btn-ghost settings-master-btn' : 'btn-danger settings-master-btn'}
+          >
+            {settings.soundEnabled ? 'Mutar todos' : 'Ativar sons'}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => applySettings({ soundEnabled: !settings.soundEnabled })}
-          className={settings.soundEnabled ? 'btn-ghost' : 'btn-danger'}
-        >
-          {settings.soundEnabled ? 'Mutar todos os sons' : 'Ativar todos os sons'}
-        </button>
       </div>
 
-      <label className="panel-soft mt-5 block p-4">
-        <span className="flex items-center justify-between gap-3">
-          <span>
-            <span className="block font-semibold text-[color:var(--text-strong)]">Volume geral</span>
-            <span className="mt-1 block text-sm text-[color:var(--text-muted)]">
-              Multiplica o volume individual de cada som.
-            </span>
-          </span>
-          <span className="text-sm font-semibold text-[color:var(--text-strong)]">{masterVolumePercent}%</span>
-        </span>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={masterVolumePercent}
-          onChange={(event) => applySettings({ masterVolume: Number(event.target.value) / 100 }, false)}
-          onPointerUp={() => audioManager.playClick()}
-          onKeyUp={() => audioManager.playClick()}
-          className="mt-4 w-full accent-[color:var(--accent)]"
-        />
-      </label>
+      <div className="settings-layout-grid">
+        <div className="panel settings-control-column p-4 md:p-5">
+          <div>
+            <p className="filter-label">Controle geral</p>
+            <p className="filter-caption">Define a base de volume e quais grupos podem tocar.</p>
+          </div>
 
-      <div className="mt-4 grid gap-3">
-        {groupToggles.map((toggle) => (
-          <label
-            key={toggle.key}
-            className="panel-soft flex items-center justify-between gap-4 p-4"
-          >
-            <span>
-              <span className="block font-semibold text-[color:var(--text-strong)]">{toggle.title}</span>
-              <span className="mt-1 block text-sm text-[color:var(--text-muted)]">{toggle.description}</span>
+          <label className="settings-volume-card mt-4 block">
+            <span className="flex items-center justify-between gap-3">
+              <span>
+                <span className="block font-semibold text-[color:var(--text-strong)]">Volume geral</span>
+                <span className="mt-1 block text-sm text-[color:var(--text-muted)]">
+                  Multiplica o volume individual de cada som.
+                </span>
+              </span>
+              <span className="settings-volume-value">{masterVolumePercent}%</span>
             </span>
             <input
-              type="checkbox"
-              checked={settings[toggle.key]}
-              onChange={(event) => applySettings({ [toggle.key]: event.target.checked })}
-              className="h-5 w-5 accent-[color:var(--accent)]"
+              type="range"
+              min="0"
+              max="100"
+              value={masterVolumePercent}
+              onChange={(event) => applySettings({ masterVolume: Number(event.target.value) / 100 }, false)}
+              onPointerUp={() => audioManager.playClick()}
+              onKeyUp={() => audioManager.playClick()}
+              className="mt-4 w-full accent-[color:var(--accent)]"
             />
           </label>
-        ))}
-      </div>
 
-      <div className="mt-5 grid gap-3">
-        {soundControls.map((control) => {
-          const volumePercent = Math.round(settings[control.volumeKey] * 100)
-          const muted = settings[control.muteKey]
-
-          return (
-            <article key={control.volumeKey} className="panel-soft p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="font-semibold text-[color:var(--text-strong)]">{control.title}</h2>
-                  <p className="mt-1 text-sm text-[color:var(--text-muted)]">{control.description}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => toggleSoundMute(control.muteKey)} className="btn-ghost text-xs">
-                    {muted ? 'Desmutar' : 'Mutar'}
-                  </button>
-                  <button type="button" onClick={control.preview} disabled={muted || !settings.soundEnabled} className="btn-secondary text-xs">
-                    Testar
-                  </button>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-3">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={volumePercent}
-                  onChange={(event) => setSoundVolume(control.volumeKey, Number(event.target.value) / 100)}
-                  onPointerUp={control.preview}
-                  onKeyUp={control.preview}
-                  disabled={muted}
-                  className="w-full accent-[color:var(--accent)] disabled:opacity-50"
-                />
-                <span className="w-12 text-right text-sm font-semibold text-[color:var(--text-strong)]">
-                  {muted ? '0%' : `${volumePercent}%`}
+          <div className="mt-4 grid gap-3">
+            {groupToggles.map((toggle) => (
+              <label key={toggle.key} className="settings-toggle-row">
+                <span>
+                  <span className="block font-semibold text-[color:var(--text-strong)]">{toggle.title}</span>
+                  <span className="mt-1 block text-sm text-[color:var(--text-muted)]">{toggle.description}</span>
                 </span>
-              </div>
-            </article>
-          )
-        })}
-      </div>
+                <input
+                  type="checkbox"
+                  checked={settings[toggle.key]}
+                  onChange={(event) => applySettings({ [toggle.key]: event.target.checked })}
+                  className="settings-switch"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-[color:var(--text-muted)]">
-          Padrao: volume geral {Math.round(DEFAULT_SETTINGS.masterVolume * 100)}%, digitacao{' '}
-          {Math.round(DEFAULT_SETTINGS.typingVolume * 100)}%.
-        </p>
-        <button type="button" onClick={handleReset} className="btn-ghost">
-          Resetar configuracoes
-        </button>
+        <div className="panel settings-control-column p-4 md:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="filter-label">Volumes individuais</p>
+              <p className="filter-caption">Mute ou ajuste cada tipo de feedback separadamente.</p>
+            </div>
+            <button type="button" onClick={handleReset} className="btn-ghost settings-reset-btn">
+              Resetar
+            </button>
+          </div>
+
+          <div className="settings-sound-grid mt-4">
+            {soundControls.map((control) => {
+              const volumePercent = Math.round(settings[control.volumeKey] * 100)
+              const muted = settings[control.muteKey]
+
+              return (
+                <article key={control.volumeKey} className={muted ? 'sound-control-card sound-control-muted' : 'sound-control-card'}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="font-semibold text-[color:var(--text-strong)]">{control.title}</h2>
+                      <p className="mt-1 text-sm text-[color:var(--text-muted)]">{control.description}</p>
+                    </div>
+                    <span className="settings-volume-value">{muted ? '0%' : `${volumePercent}%`}</span>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={volumePercent}
+                      onChange={(event) => setSoundVolume(control.volumeKey, Number(event.target.value) / 100)}
+                      onPointerUp={control.preview}
+                      onKeyUp={control.preview}
+                      disabled={muted}
+                      className="w-full accent-[color:var(--accent)] disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={() => toggleSoundMute(control.muteKey)} className="btn-ghost settings-mini-btn">
+                      {muted ? 'Desmutar' : 'Mutar'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={control.preview}
+                      disabled={muted || !settings.soundEnabled}
+                      className="btn-secondary settings-mini-btn"
+                    >
+                      Testar
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+
+          <p className="mt-4 text-xs text-[color:var(--text-muted)]">
+            Padrao: volume geral {Math.round(DEFAULT_SETTINGS.masterVolume * 100)}%, digitacao{' '}
+            {Math.round(DEFAULT_SETTINGS.typingVolume * 100)}%.
+          </p>
+        </div>
       </div>
     </section>
   )

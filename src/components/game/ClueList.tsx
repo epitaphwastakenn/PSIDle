@@ -1,4 +1,4 @@
-import type { CaseClue } from '../../types/models'
+﻿import type { CaseClue } from '../../types/models'
 
 interface ClueListProps {
   clues: CaseClue[]
@@ -21,28 +21,33 @@ export function ClueList({ clues, revealedCluesCount }: ClueListProps) {
 
   if (!visibleClues.length) {
     return (
-      <section className="panel panel-motion p-4">
-        <h3 className="page-title text-xl">Pistas</h3>
-        <p className="mt-2 text-sm text-[color:var(--text-muted)]">Ainda sem pistas extras. Um erro libera a proxima dica.</p>
+      <section className="panel panel-motion p-4 md:p-5">
+        <p className="guess-eyebrow">Pistas</p>
+        <h3 className="page-title mt-2 text-xl">Nenhuma pista extra ainda</h3>
+        <p className="mt-2 text-sm text-[color:var(--text-muted)]">No treino, cada erro abre a proxima dica para afinar o raciocinio.</p>
       </section>
     )
   }
 
   return (
-    <section className="panel panel-motion p-4">
-      <h3 className="page-title text-xl">Pistas reveladas</h3>
-      <ul className="mt-3 space-y-3">
+    <section className="panel panel-motion p-4 md:p-5">
+      <p className="guess-eyebrow">Pistas</p>
+      <h3 className="page-title mt-2 text-xl">Pistas reveladas</h3>
+      <ul className="mt-4 space-y-3">
         {visibleClues.map((clue, index) => (
           <li
             key={clue.id}
-            className="clue-reveal panel-soft px-3 py-2 text-sm text-[color:var(--text-body)]"
+            className="clue-reveal panel-soft px-3 py-3 text-sm text-[color:var(--text-body)]"
             style={{ animationDelay: `${index * 55}ms` }}
           >
-            <p className="font-semibold text-[color:var(--text-strong)]">{clueTypeLabels[clue.type]}</p>
-            <p>{clue.text}</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[color:var(--accent)]">
+              {clueTypeLabels[clue.type]}
+            </p>
+            <p className="mt-2 leading-relaxed">{clue.text}</p>
           </li>
         ))}
       </ul>
     </section>
   )
 }
+
