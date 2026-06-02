@@ -36,7 +36,7 @@ export function ProfilePage() {
         <p className="page-subtitle text-sm">Acompanhe nivel, acertos, streak e conquistas.</p>
       </div>
 
-      <section className="panel panel-motion p-5">
+      <section className="panel p-5">
         <form onSubmit={handleSaveName} className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <label className="text-sm">
             <span className="mb-1 block font-semibold text-[color:var(--text-body)]">Nome do jogador</span>

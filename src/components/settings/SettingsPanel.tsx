@@ -104,7 +104,7 @@ export function SettingsPanel({ initialSettings }: SettingsPanelProps) {
   }
 
   return (
-    <section className="panel panel-motion p-5">
+    <section className="panel p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="page-title text-3xl">Configuracoes</h1>
@@ -142,11 +142,10 @@ export function SettingsPanel({ initialSettings }: SettingsPanelProps) {
       </label>
 
       <div className="mt-4 grid gap-3">
-        {groupToggles.map((toggle, index) => (
+        {groupToggles.map((toggle) => (
           <label
             key={toggle.key}
-            className="list-pop panel-soft flex items-center justify-between gap-4 p-4"
-            style={{ animationDelay: `${index * 45}ms` }}
+            className="panel-soft flex items-center justify-between gap-4 p-4"
           >
             <span>
               <span className="block font-semibold text-[color:var(--text-strong)]">{toggle.title}</span>

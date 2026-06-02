@@ -24,11 +24,14 @@ interface NavbarProps {
 
 export function Navbar({ theme, onToggleTheme }: NavbarProps) {
   return (
-    <header className="nav-shell sticky top-0 z-30 border-b border-[color:var(--border-soft)] bg-[color:rgba(10,14,34,0.8)] backdrop-blur-md">
+    <header className="site-header nav-shell sticky top-0 z-30 border-b border-[color:var(--border-soft)]">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3">
-        <div>
-          <p className="page-title text-xl md:text-2xl">PsiDle</p>
-          <p className="page-subtitle text-xs">Estudo de psicologia em formato de jogo</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="brand-mark shrink-0">PS</span>
+          <div className="min-w-0">
+            <p className="page-title truncate text-xl md:text-2xl">PsiDle</p>
+            <p className="page-subtitle truncate text-xs">Estudo de psicologia em formato de jogo</p>
+          </div>
         </div>
         <button
           type="button"

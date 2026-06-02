@@ -21,7 +21,10 @@ export function AppShell({ children }: PropsWithChildren) {
   return (
     <div className="app-ambient flex min-h-screen flex-col">
       <Navbar theme={theme} onToggleTheme={handleToggleTheme} />
-      <main key={location.pathname} className="page-motion mx-auto w-full max-w-6xl flex-1 px-4 py-4 md:py-6">
+      <main
+        key={`${location.pathname}${location.search}`}
+        className="page-motion mx-auto w-full max-w-6xl flex-1 px-4 py-4 md:py-6"
+      >
         {children}
       </main>
       <Footer />

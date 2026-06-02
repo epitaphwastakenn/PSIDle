@@ -9,7 +9,7 @@ export function HomePage() {
 
   return (
     <div className="space-y-5">
-      <section className="panel overflow-hidden p-5 md:p-7">
+      <section className="hero-panel panel overflow-hidden p-5 md:p-7">
         <div className="grid gap-5 md:grid-cols-[1.25fr_0.75fr] md:items-center">
           <div>
             <h1 className="page-title text-3xl md:text-5xl">PsiDle</h1>
@@ -34,7 +34,7 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="panel-soft p-4 md:p-5">
+          <div className="summary-surface p-4 md:p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">
               Foco da sessao
             </p>

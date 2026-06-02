@@ -124,7 +124,7 @@ const disorderSeeds: DisorderSeed[] = [
     category: 'Ansiedade',
     aliases: ['panico', 'ataques de panico', 'tp'],
     shortSummary: 'Crises abruptas de medo intenso seguidas por medo persistente de novas crises.',
-    difficulty: 'medium',
+    difficulty: 'easy',
   },
   {
     id: 'agoraphobia',
@@ -133,7 +133,7 @@ const disorderSeeds: DisorderSeed[] = [
     category: 'Ansiedade',
     aliases: ['agorafobia'],
     shortSummary: 'Medo de situacoes nas quais escapar ou receber ajuda parece dificil.',
-    difficulty: 'medium',
+    difficulty: 'easy',
   },
   {
     id: 'social_anxiety',
@@ -142,7 +142,7 @@ const disorderSeeds: DisorderSeed[] = [
     category: 'Ansiedade',
     aliases: ['fobia social', 'tas', 'ansiedade social'],
     shortSummary: 'Medo intenso de avaliacao negativa em interacoes sociais e desempenho.',
-    difficulty: 'medium',
+    difficulty: 'easy',
   },
   {
     id: 'specific_phobia',

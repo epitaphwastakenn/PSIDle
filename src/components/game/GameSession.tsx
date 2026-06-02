@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { disorders } from '../../data/disorders'
 import type { Attempt, Case } from '../../types/models'
 import { applyAchievementUnlocks } from '../../lib/achievementEngine'
@@ -24,6 +24,7 @@ import {
 } from '../../lib/storage'
 import { generateDailyTasks, updateTaskProgress } from '../../lib/taskEngine'
 import { RewardToast } from '../common/RewardToast'
+import type { RewardToastVariant } from '../common/RewardToast'
 import { AttemptHistory } from './AttemptHistory'
 import { CaseCard } from './CaseCard'
 import { ClueList } from './ClueList'
@@ -71,11 +72,16 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
   const [reviewAdded, setReviewAdded] = useState(false)
   const [explanationReviewed, setExplanationReviewed] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [toastTitle, setToastTitle] = useState('')
+  const [toastVariant, setToastVariant] = useState<RewardToastVariant>('reward')
+  const [toastKey, setToastKey] = useState(0)
   const [showToast, setShowToast] = useState(false)
   const [guessFeedback, setGuessFeedback] = useState<GuessFeedbackState>({
     type: 'idle',
     message: '',
   })
+  const [guessFeedbackKey, setGuessFeedbackKey] = useState(0)
+  const resultRef = useRef<HTMLDivElement>(null)
 
   const correctDisorder = useMemo(
     () => disorders.find((disorder) => disorder.id === caseData.correctDisorderId),
@@ -108,13 +114,36 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     return () => window.clearTimeout(timeout)
   }, [guessFeedback.type, completed])
 
-  function pushToast(message: string) {
+  useEffect(() => {
+    if (!(mode === 'practice' && completed && !solved && result)) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      resultRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [mode, completed, solved, result])
+
+  function pushToast(
+    message: string,
+    variant: RewardToastVariant = 'reward',
+    title = '',
+  ) {
+    setToastTitle(title)
+    setToastVariant(variant)
     setToastMessage(message)
+    setToastKey((current) => current + 1)
     setShowToast(true)
   }
 
   function showGuessFeedback(type: Exclude<GuessFeedbackType, 'idle'>, message: string) {
     setGuessFeedback({ type, message })
+    setGuessFeedbackKey((current) => current + 1)
     if (type === 'correct') {
       audioManager.playCorrect()
     } else {
@@ -224,11 +253,21 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     const totalCoins = baseRewards.coins + achievementResult.rewardCoins
 
     if (achievementResult.unlockedIds.length) {
-      pushToast(`+${totalXp} XP e +${totalCoins} moedas. Nova conquista: ${achievementResult.unlockedIds.length}.`)
+      pushToast(
+        `+${totalXp} XP e +${totalCoins} moedas. Nova conquista: ${achievementResult.unlockedIds.length}.`,
+        'reward',
+        'Conquista liberada',
+      )
     } else if (speedBonusXp > 0) {
-      pushToast(`+${totalXp} XP e +${totalCoins} moedas. Bonus de velocidade: +${speedBonusXp} XP.`)
+      pushToast(
+        `+${totalXp} XP e +${totalCoins} moedas. Bonus de velocidade: +${speedBonusXp} XP.`,
+        'success',
+        'Acerto veloz',
+      )
+    } else if (didSolve) {
+      pushToast(`+${totalXp} XP e +${totalCoins} moedas recebidos.`, 'success', 'Caso resolvido')
     } else {
-      pushToast(`+${totalXp} XP e +${totalCoins} moedas recebidos.`)
+      pushToast(`+${totalXp} XP e +${totalCoins} moedas recebidos.`, 'review', 'Caso enviado para revisao')
     }
 
     setResult({
@@ -308,7 +347,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     })
     saveReviewItems(reviewItems)
     setReviewAdded(true)
-    pushToast('Caso adicionado a fila de revisao.')
+    pushToast('Caso adicionado a fila de revisao.', 'review', 'Revisao atualizada')
   }
 
   function handleReviewExplanation() {
@@ -330,7 +369,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       ...result,
       xpGained: result.xpGained + 20,
     })
-    pushToast('+20 XP por revisar a explicacao.')
+    pushToast('+20 XP por revisar a explicacao.', 'reward', 'Explicacao revisada')
   }
 
   if (!correctDisorder) {
@@ -356,6 +395,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
         helperText={dailyHelperText}
         feedbackType={guessFeedback.type}
         feedbackMessage={guessFeedback.message}
+        feedbackPulseKey={guessFeedbackKey}
         onChange={setSelectedGuess}
         onSubmit={handleSubmitGuess}
       />
@@ -366,22 +406,31 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       </div>
 
       {result ? (
-        <ResultPanel
-          solved={solved}
-          score={result.score}
-          correctDisorderName={correctDisorder.namePt}
-          explanation={caseData.explanation}
-          differentials={differentialItems}
-          xpGained={result.xpGained}
-          coinsGained={result.coinsGained}
-          onAddToReview={handleAddToReview}
-          onReviewExplanation={handleReviewExplanation}
-          addedToReview={reviewAdded}
-          explanationReviewed={explanationReviewed}
-        />
+        <div ref={resultRef} className="result-anchor">
+          <ResultPanel
+            solved={solved}
+            score={result.score}
+            correctDisorderName={correctDisorder.namePt}
+            explanation={caseData.explanation}
+            differentials={differentialItems}
+            xpGained={result.xpGained}
+            coinsGained={result.coinsGained}
+            onAddToReview={handleAddToReview}
+            onReviewExplanation={handleReviewExplanation}
+            addedToReview={reviewAdded}
+            explanationReviewed={explanationReviewed}
+          />
+        </div>
       ) : null}
 
-      <RewardToast show={showToast} message={toastMessage} onClose={() => setShowToast(false)} />
+      <RewardToast
+        key={toastKey}
+        show={showToast}
+        message={toastMessage}
+        title={toastTitle}
+        variant={toastVariant}
+        onClose={() => setShowToast(false)}
+      />
     </div>
   )
 }

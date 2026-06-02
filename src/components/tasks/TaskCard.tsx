@@ -8,14 +8,25 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onClaim }: TaskCardProps) {
   const progressPercent = task.goal > 0 ? Math.round((task.progress / task.goal) * 100) : 0
+  const claimReady = task.completed && !task.claimed
 
   return (
-    <article className="panel panel-motion p-4">
+    <article
+      className={[
+        'panel panel-motion task-card relative overflow-hidden p-4',
+        claimReady ? 'task-card-ready' : '',
+        task.claimed ? 'task-card-claimed' : '',
+      ].join(' ')}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold text-[color:var(--text-strong)]">{task.title}</h3>
-        <span className="text-xs font-semibold text-[color:var(--text-muted)]">
-          {task.progress}/{task.goal}
-        </span>
+        <div className="flex items-center gap-2">
+          {claimReady ? <span className="task-status-badge">Pronta</span> : null}
+          {task.claimed ? <span className="task-status-badge">Resgatada</span> : null}
+          <span className="text-xs font-semibold text-[color:var(--text-muted)]">
+            {task.progress}/{task.goal}
+          </span>
+        </div>
       </div>
       <p className="mt-2 text-sm text-[color:var(--text-body)]">{task.description}</p>
 
@@ -37,7 +48,7 @@ export function TaskCard({ task, onClaim }: TaskCardProps) {
             audioManager.playClick()
             onClaim(task.id)
           }}
-          className="btn-primary"
+          className={claimReady ? 'btn-primary reward-ready' : 'btn-primary'}
         >
           {task.claimed ? 'Resgatada' : 'Resgatar'}
         </button>

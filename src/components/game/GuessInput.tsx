@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react'
 import type { FormEvent } from 'react'
 import { audioManager } from '../../lib/audio'
+import { FeedbackBurst } from '../common/FeedbackBurst'
 
 interface GuessInputProps {
   value: string
@@ -8,6 +10,7 @@ interface GuessInputProps {
   helperText?: string
   feedbackType?: 'idle' | 'correct' | 'wrong'
   feedbackMessage?: string
+  feedbackPulseKey?: number
   onChange: (value: string) => void
   onSubmit: () => void
 }
@@ -19,11 +22,27 @@ export function GuessInput({
   helperText,
   feedbackType = 'idle',
   feedbackMessage,
+  feedbackPulseKey = 0,
   onChange,
   onSubmit,
 }: GuessInputProps) {
   const listId = 'disorder-options'
   const hasFeedback = feedbackType !== 'idle' && Boolean(feedbackMessage)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (disabled) {
+      return
+    }
+
+    inputRef.current?.focus()
+  }, [disabled])
+
+  useEffect(() => {
+    if (feedbackType === 'wrong' && !disabled) {
+      inputRef.current?.focus()
+    }
+  }, [feedbackType, disabled])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -43,7 +62,7 @@ export function GuessInput({
     <form
       onSubmit={handleSubmit}
       className={[
-        'panel panel-motion p-4 transition',
+        'panel panel-motion relative overflow-hidden p-4 transition',
         feedbackType === 'correct'
           ? 'feedback-correct ring-2 ring-[color:rgba(59,215,176,0.75)] bg-[color:rgba(59,215,176,0.06)]'
           : '',
@@ -52,12 +71,20 @@ export function GuessInput({
           : '',
       ].join(' ')}
     >
+      {hasFeedback ? (
+        <FeedbackBurst
+          key={`${feedbackType}-${feedbackPulseKey}`}
+          density="soft"
+          variant={feedbackType === 'correct' ? 'success' : 'danger'}
+        />
+      ) : null}
       <label htmlFor="guess-input" className="mb-2 block text-sm font-semibold text-[color:var(--text-body)]">
         Seu palpite
       </label>
       <div className="flex flex-col gap-3 md:flex-row">
         <input
           id="guess-input"
+          ref={inputRef}
           list={listId}
           value={value}
           disabled={disabled}

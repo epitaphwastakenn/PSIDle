@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { audioManager } from '../../lib/audio'
 import type { Case, ReviewItem } from '../../types/models'
+import { FeedbackBurst } from '../common/FeedbackBurst'
 
 interface ReviewCardProps {
   item: ReviewItem
@@ -12,9 +13,24 @@ interface ReviewCardProps {
 export function ReviewCard({ item, caseData, correctDisorderName, onGrade }: ReviewCardProps) {
   const [guess, setGuess] = useState('')
   const [revealed, setRevealed] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!revealed) {
+      inputRef.current?.focus()
+    }
+  }, [item.id, revealed])
+
+  function handleGuessChange(nextValue: string) {
+    if (nextValue.length > guess.length) {
+      audioManager.playTyping()
+    }
+
+    setGuess(nextValue)
+  }
 
   return (
-    <article className="panel panel-motion p-5">
+    <article className="panel panel-motion relative overflow-hidden p-5">
       <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">{caseData.category}</p>
       <h3 className="page-title mt-1 text-2xl">{caseData.title}</h3>
       <p className="mt-3 text-sm leading-relaxed text-[color:var(--text-body)] md:text-base">{caseData.vignette}</p>
@@ -26,8 +42,9 @@ export function ReviewCard({ item, caseData, correctDisorderName, onGrade }: Rev
           </label>
           <input
             id={`review-guess-${item.id}`}
+            ref={inputRef}
             value={guess}
-            onChange={(event) => setGuess(event.target.value)}
+            onChange={(event) => handleGuessChange(event.target.value)}
             placeholder="Digite seu palpite"
             className="field-input"
           />
@@ -43,7 +60,8 @@ export function ReviewCard({ item, caseData, correctDisorderName, onGrade }: Rev
           </button>
         </div>
       ) : (
-        <div className="clue-reveal panel-soft mt-4 p-3">
+        <div className="clue-reveal panel-soft relative mt-4 overflow-hidden p-3">
+          <FeedbackBurst key={`review-reveal-${item.id}`} variant="review" density="soft" />
           <p className="text-sm text-[color:var(--text-body)]">
             Seu palpite: <span className="font-semibold text-[color:var(--text-strong)]">{guess || 'Nao informado'}</span>
           </p>

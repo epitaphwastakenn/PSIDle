@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { RewardToast } from '../components/common/RewardToast'
+import type { RewardToastVariant } from '../components/common/RewardToast'
 import { ReviewCard } from '../components/review/ReviewCard'
 import { approvedCases } from '../data/cases'
 import { disorders } from '../data/disorders'
 import { applyAchievementUnlocks } from '../lib/achievementEngine'
+import { audioManager } from '../lib/audio'
 import { awardCoins, awardXp } from '../lib/rewards'
 import { getDueReviewItems, gradeReviewItem } from '../lib/review'
 import {
@@ -19,10 +21,17 @@ import type { Case, ReviewItem } from '../types/models'
 
 type ReviewTab = 'due' | 'reviewed'
 
+function getReviewTabClass(tab: ReviewTab, activeTab: ReviewTab): string {
+  return tab === activeTab ? 'review-tab review-tab-active' : 'review-tab'
+}
+
 export function ReviewPage() {
   const [items, setItems] = useState(() => getReviewItems())
   const [activeTab, setActiveTab] = useState<ReviewTab>('due')
   const [toastMessage, setToastMessage] = useState('')
+  const [toastTitle, setToastTitle] = useState('')
+  const [toastVariant, setToastVariant] = useState<RewardToastVariant>('review')
+  const [toastKey, setToastKey] = useState(0)
   const [showToast, setShowToast] = useState(false)
 
   const dueItems = useMemo(() => getDueReviewItems(items), [items])
@@ -46,8 +55,15 @@ export function ReviewPage() {
     ? disorders.find((disorder) => disorder.id === currentItem.correctDisorderId)
     : undefined
 
-  function pushToast(message: string) {
+  function pushToast(
+    message: string,
+    variant: RewardToastVariant = 'review',
+    title = '',
+  ) {
+    setToastTitle(title)
+    setToastVariant(variant)
     setToastMessage(message)
+    setToastKey((current) => current + 1)
     setShowToast(true)
   }
 
@@ -76,7 +92,31 @@ export function ReviewPage() {
     progress = awardCoins(progress, achievementResult.rewardCoins)
     saveUserProgress(progress)
 
-    pushToast(`Revisao registrada. +${correct ? 40 : 20} XP${achievementResult.rewardXp ? ' + bonus de conquista' : ''}.`)
+    if (correct) {
+      audioManager.playCorrect()
+      pushToast(
+        `Revisao registrada. +40 XP${achievementResult.rewardXp ? ' + bonus de conquista' : ''}.`,
+        achievementResult.rewardXp ? 'reward' : 'success',
+        achievementResult.rewardXp ? 'Conquista liberada' : 'Revisao correta',
+      )
+      return
+    }
+
+    audioManager.playWrong()
+    pushToast(
+      `Revisao registrada. +20 XP${achievementResult.rewardXp ? ' + bonus de conquista' : ''}.`,
+      'review',
+      'Caso continua em foco',
+    )
+  }
+
+  function handleTabChange(tab: ReviewTab) {
+    if (tab === activeTab) {
+      return
+    }
+
+    audioManager.playClick()
+    setActiveTab(tab)
   }
 
   return (
@@ -91,18 +131,22 @@ export function ReviewPage() {
           <p className="text-sm text-[color:var(--text-body)]">
             Pendentes agora: <span className="font-semibold text-[color:var(--text-strong)]">{dueItems.length}</span>
           </p>
-          <div className="flex rounded-xl border border-[color:var(--border-soft)] p-1">
+          <div className="review-tabs" role="tablist" aria-label="Secoes de revisao">
             <button
               type="button"
-              onClick={() => setActiveTab('due')}
-              className={activeTab === 'due' ? 'btn-primary px-3 py-2 text-xs' : 'btn-ghost px-3 py-2 text-xs'}
+              onClick={() => handleTabChange('due')}
+              className={getReviewTabClass('due', activeTab)}
+              role="tab"
+              aria-selected={activeTab === 'due'}
             >
               Fila
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('reviewed')}
-              className={activeTab === 'reviewed' ? 'btn-primary px-3 py-2 text-xs' : 'btn-ghost px-3 py-2 text-xs'}
+              onClick={() => handleTabChange('reviewed')}
+              className={getReviewTabClass('reviewed', activeTab)}
+              role="tab"
+              aria-selected={activeTab === 'reviewed'}
             >
               Casos revisados
             </button>
@@ -110,25 +154,34 @@ export function ReviewPage() {
         </div>
       </section>
 
-      {activeTab === 'due' ? (
-        currentItem && currentCase && correctDisorder ? (
-          <ReviewCard
-            key={currentItem.id}
-            item={currentItem}
-            caseData={currentCase}
-            correctDisorderName={correctDisorder.namePt}
-            onGrade={handleGrade}
-          />
+      <div key={activeTab} className="tab-content-motion">
+        {activeTab === 'due' ? (
+          currentItem && currentCase && correctDisorder ? (
+            <ReviewCard
+              key={currentItem.id}
+              item={currentItem}
+              caseData={currentCase}
+              correctDisorderName={correctDisorder.namePt}
+              onGrade={handleGrade}
+            />
+          ) : (
+            <section className="panel p-5 text-sm text-[color:var(--text-body)]">
+              Nenhum item vencido agora. Adicione casos manualmente ou finalize tentativas erradas para alimentar sua fila.
+            </section>
+          )
         ) : (
-          <section className="panel p-5 text-sm text-[color:var(--text-body)]">
-            Nenhum item vencido agora. Adicione casos manualmente ou finalize tentativas erradas para alimentar sua fila.
-          </section>
-        )
-      ) : (
-        <ReviewedCasesList items={reviewedItems} />
-      )}
+          <ReviewedCasesList items={reviewedItems} />
+        )}
+      </div>
 
-      <RewardToast show={showToast} message={toastMessage} onClose={() => setShowToast(false)} />
+      <RewardToast
+        key={toastKey}
+        show={showToast}
+        message={toastMessage}
+        title={toastTitle}
+        variant={toastVariant}
+        onClose={() => setShowToast(false)}
+      />
     </div>
   )
 }
