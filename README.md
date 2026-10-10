@@ -40,6 +40,8 @@ Nao usa:
 
 ## Instalar
 
+Requer Node.js 22.15 ou superior (use a versão mais recente da linha 22).
+
 ```bash
 npm install
 ```
@@ -94,11 +96,44 @@ Tudo e TypeScript estatico/manual, sem fetch de backend.
 
 - Caso diario: gerado proceduralmente de forma deterministica por data.
 - Modo treino: gera casos ficticios proceduralmente a cada clique, com filtros por categoria e dificuldade.
-- A idade e sorteada com coerencia de contexto (escola, faculdade, trabalho, etc.), conforme etapa de vida.
+- Idades e apresentações variam dentro de perfis coerentes; duração e limites clínicos não são sorteados pela dificuldade.
+- Relatos curtos em dois parágrafos: situação observável, curso e um detalhe de comparação. Difícil significa distinguir hipóteses próximas, não ler mais texto.
 
 Implementacao:
 
 - `src/lib/proceduralCases.ts`
+- `src/data/caseProfiles.ts`: apresentações, curso, distinção, pistas e diferencial de cada hipótese.
+- `src/data/casePeople.ts`: nomes e sobrenomes, separados do conteúdo do caso.
+
+### Seleção inteligente e continuidade
+
+- O treino respeita os filtros e evita até oito hipóteses recentes, conforme o tamanho do catálogo filtrado.
+- A seleção inteligente aumenta o peso de hipóteses novas, erros anteriores e categorias com menor aproveitamento. Pode ser desativada para sorteio uniforme.
+- Preferências e partidas em andamento são salvas: sair da aba ou recarregar não apaga as tentativas.
+- Antes de descartar um treino iniciado, o site pede confirmação no próprio painel.
+- A mesma hipótese no treino rende 100%, 50%, 25% e depois 0% de XP/moedas de conclusão no mesmo dia. A leitura da explicação acompanha esse fator. Metas e conquistas continuam sendo resgatadas uma única vez.
+- O resultado diário, a explicação e as recompensas permanecem acessíveis após concluir o caso, sem premiar novamente ao recarregar.
+- Revisões usam a data agendada, inclusive para itens antes considerados dominados. O caderno permite buscar e expandir os casos já revisados.
+
+Os casos são composições locais de texto, não IA generativa. As 121 hipóteses têm perfis próprios ou de famílias explicitamente definidas. O gerador não monta sintomas aleatórios de uma categoria nem repete a definição do catálogo no enunciado. Os diferenciais são escolhidos editorialmente por relevância, não por sorteio.
+
+O sorteio sem hipótese definida equilibra categorias antes de escolher uma hipótese. O treino mantém a seleção inteligente e consulta casos anteriores para alternar apresentações da mesma hipótese. Com duas apresentações, por exemplo, evita repetir a última. Esse repertório é finito: variar seed não produz conhecimento clínico novo nem garante casos infinitamente inéditos.
+
+Os IDs novos identificam a versão 2 do gerador. Partidas em andamento, resultados diários e revisões mantêm seus snapshots antigos, sem migração destrutiva. Para ver a redação nova durante uma partida antiga, use **Novo caso** no treino.
+
+O catálogo continua precisando de revisão humana especializada: testes de código verificam integridade e coerência estrutural, não validade diagnóstica. Algumas entradas misturam nomenclaturas DSM e CID; as narrativas não são critérios completos nem um substituto de avaliação clínica.
+
+### Testes
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+A suíte verifica filtros, rotação de hipóteses e apresentações, pesos adaptativos, reprodução do diário, cobertura do catálogo, faixas etárias, limites de palavras, fatos discriminantes, revisão, aliases e recompensas por repetição. O workflow de deploy executa essas verificações antes de publicar.
+
+Fontes e critérios de UX: [notas de pesquisa](docs/UX-E-ESTUDO.md).
 
 ## Persistencia local
 
@@ -107,6 +142,9 @@ Chaves versionadas:
 - `psidle:v1:progress`
 - `psidle:v1:tasks`
 - `psidle:v1:review`
+- `psidle:v1:session:daily`
+- `psidle:v1:session:practice`
+- `psidle:v1:practice-selection`
 - `psidle:user-settings:v1`
 
 Com tratamento de dados ausentes/corrompidos.
@@ -138,6 +176,8 @@ Edite `src/data/disorders.ts` com objetos `Disorder`:
 - `shortSummary`
 - `studyNote`
 - `difficulty`
+
+Inclua também um perfil com o mesmo `id` em `src/data/caseProfiles.ts`: pelo menos duas situações compatíveis, `ageRange`, `course`, `distinction`, três pistas em `details` e um diferencial existente. Todas as situações precisam combinar com o mesmo curso e a mesma distinção. Escreva observações originais e curtas; não cole definições no enunciado. Rode os testes para verificar cobertura e tamanho. Novas condições não recebem um texto genérico silenciosamente.
 
 ## Adicionar novos casos manuais
 

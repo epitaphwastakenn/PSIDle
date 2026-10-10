@@ -1,4 +1,5 @@
-﻿import type { CaseClue } from '../../types/models'
+import type { CaseClue } from '../../types/models'
+import { Icon } from '../common/Icon'
 
 interface ClueListProps {
   clues: CaseClue[]
@@ -8,46 +9,34 @@ interface ClueListProps {
 const clueTypeLabels: Record<CaseClue['type'], string> = {
   chief_complaint: 'Queixa principal',
   symptoms: 'Sintomas',
-  duration: 'Duracao',
-  impairment: 'Prejuizo',
-  exclusion: 'Exclusao',
+  duration: 'Duração',
+  impairment: 'Prejuízo',
+  exclusion: 'Exclusão',
   differential: 'Diferencial',
 }
 
 export function ClueList({ clues, revealedCluesCount }: ClueListProps) {
-  const visibleClues = clues
-    .sort((a, b) => a.order - b.order)
-    .slice(0, Math.max(0, Math.min(revealedCluesCount, clues.length)))
-
-  if (!visibleClues.length) {
-    return (
-      <section className="panel panel-motion p-4 md:p-5">
-        <p className="guess-eyebrow">Pistas</p>
-        <h3 className="page-title mt-2 text-xl">Nenhuma pista extra ainda</h3>
-        <p className="mt-2 text-sm text-[color:var(--text-muted)]">No treino, cada erro abre a proxima dica para afinar o raciocinio.</p>
-      </section>
-    )
-  }
+  const sorted = clues.toSorted((a, b) => a.order - b.order)
+  const revealed = Math.max(0, Math.min(revealedCluesCount, sorted.length))
 
   return (
-    <section className="panel panel-motion p-4 md:p-5">
-      <p className="guess-eyebrow">Pistas</p>
-      <h3 className="page-title mt-2 text-xl">Pistas reveladas</h3>
-      <ul className="mt-4 space-y-3">
-        {visibleClues.map((clue, index) => (
-          <li
-            key={clue.id}
-            className="clue-reveal panel-soft px-3 py-3 text-sm text-[color:var(--text-body)]"
-            style={{ animationDelay: `${index * 55}ms` }}
-          >
-            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[color:var(--accent)]">
-              {clueTypeLabels[clue.type]}
-            </p>
-            <p className="mt-2 leading-relaxed">{clue.text}</p>
+    <section className="card side-card">
+      <div className="side-card-head">
+        <h3 className="h3">Pistas</h3>
+        <span className="tag tag-accent mono">{revealed}/{sorted.length}</span>
+      </div>
+      <ul className="clue-list">
+        {sorted.map((clue, index) => index < revealed ? (
+          <li key={clue.id} className="clue-item clue-reveal">
+            <span className="tile tile-sm tile-accent">{index + 1}</span>
+            <div><span className="clue-type">{clueTypeLabels[clue.type]}</span><p>{clue.text}</p></div>
+          </li>
+        ) : (
+          <li key={clue.id} className="clue-locked">
+            <span className="tile tile-sm"><Icon name="lock" /></span>Pista {index + 1}
           </li>
         ))}
       </ul>
     </section>
   )
 }
-

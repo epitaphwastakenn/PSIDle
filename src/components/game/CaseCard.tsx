@@ -1,35 +1,34 @@
-﻿import type { Case } from '../../types/models'
+import type { Case } from '../../types/models'
 
 interface CaseCardProps {
   caseData: Case
+  /** The diagnostic family is hidden while playing, since "same family" is part of the feedback. */
+  revealCategory?: boolean
 }
 
-export function CaseCard({ caseData }: CaseCardProps) {
-  const difficultyLabel: Record<Case['difficulty'], string> = {
-    easy: 'Facil',
-    medium: 'Media',
-    hard: 'Dificil',
-  }
+const difficultyLabel: Record<Case['difficulty'], string> = {
+  easy: 'Fácil',
+  medium: 'Médio',
+  hard: 'Difícil',
+}
 
+const difficultyTone: Record<Case['difficulty'], string> = {
+  easy: 'tag-ok',
+  medium: 'tag-warn',
+  hard: 'tag-bad',
+}
+
+export function CaseCard({ caseData, revealCategory = true }: CaseCardProps) {
   return (
-    <article className="panel panel-motion case-stage p-5 md:p-6">
-      <div className="case-stage-top">
-        <div>
-          <p className="case-eyebrow">Vinheta clinica</p>
-          <h2 className="page-title mt-2 text-2xl md:text-3xl">{caseData.title}</h2>
-        </div>
-        <div className="case-badge-row">
-          <span className="chip case-chip rounded-full px-3 py-1">{caseData.category}</span>
-          <span className="chip case-chip rounded-full px-3 py-1">{difficultyLabel[caseData.difficulty]}</span>
+    <article className="card case-card">
+      <div className="case-card-head">
+        <div className="flex flex-wrap gap-2">
+          <span className="tag">{revealCategory ? caseData.category : 'Família oculta'}</span>
+          <span className={`tag ${difficultyTone[caseData.difficulty]}`}>{difficultyLabel[caseData.difficulty]}</span>
         </div>
       </div>
-
-      <div className="case-reading-surface mt-4 p-4 md:p-5">
-        <p className="case-reading-copy text-sm leading-7 text-[color:var(--text-body)] md:text-[1.02rem]">
-          {caseData.vignette}
-        </p>
-      </div>
+      <h2 className="case-title">{caseData.title}</h2>
+      <p className="case-text">{caseData.vignette}</p>
     </article>
   )
 }
-

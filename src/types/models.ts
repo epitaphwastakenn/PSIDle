@@ -9,6 +9,7 @@ export interface Disorder {
   shortSummary: string
   studyNote: string
   difficulty: Difficulty
+  caseAgeRange?: [number, number]
 }
 
 export type CaseClueType =
@@ -57,6 +58,24 @@ export interface Attempt {
   cluesUsed: number
   caseCategory?: string
   caseDifficulty?: Difficulty
+  correctDisorderId?: string
+  caseSnapshot?: Case
+  xpGained?: number
+  coinsGained?: number
+  explanationReviewed?: boolean
+  rewardFactor?: number
+  /** Day of the daily case when it was played later from the archive. */
+  caseDate?: string
+}
+
+export interface ActiveSession {
+  caseData: Case
+  mode: Attempt['mode']
+  date: string
+  caseDate?: string
+  guesses: string[]
+  wrongGuessesCount: number
+  cluesUsed: number
 }
 
 export interface UserProgress {

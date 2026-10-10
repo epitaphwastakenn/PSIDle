@@ -1,5 +1,8 @@
-﻿import { FeedbackBurst } from '../common/FeedbackBurst'
+import { useEffect, useRef } from 'react'
+import { FeedbackBurst } from '../common/FeedbackBurst'
+import { Icon } from '../common/Icon'
 import { DifferentialList } from './DifferentialList'
+import { NextCaseCountdown } from './NextCaseCountdown'
 
 interface ResultPanelProps {
   solved: boolean
@@ -13,7 +16,12 @@ interface ResultPanelProps {
   onReviewExplanation: () => void
   addedToReview: boolean
   explanationReviewed: boolean
+  onShare?: () => void
+  showCountdown?: boolean
 }
+
+/** How long the explanation must stay on screen before it counts as read. */
+const READ_DWELL_MS = 2500
 
 export function ResultPanel({
   solved,
@@ -27,65 +35,74 @@ export function ResultPanel({
   onReviewExplanation,
   addedToReview,
   explanationReviewed,
+  onShare,
+  showCountdown = false,
 }: ResultPanelProps) {
+  const answerRef = useRef<HTMLDivElement>(null)
+  const onReadRef = useRef(onReviewExplanation)
+
+  useEffect(() => {
+    onReadRef.current = onReviewExplanation
+  })
+
+  useEffect(() => {
+    if (explanationReviewed) return
+    let timer = 0
+    const observer = new IntersectionObserver(([entry]) => {
+      window.clearTimeout(timer)
+      if (entry.isIntersecting) timer = window.setTimeout(() => onReadRef.current(), READ_DWELL_MS)
+    }, { threshold: 0.75 })
+    observer.observe(answerRef.current!)
+    return () => {
+      observer.disconnect()
+      window.clearTimeout(timer)
+    }
+  }, [explanationReviewed])
+
   return (
-    <section
-      className={[
-        'panel reward-flash result-panel relative overflow-hidden p-5 md:p-6',
-        solved ? 'result-panel-success' : 'result-panel-failure',
-      ].join(' ')}
-    >
+    <section className={`card reward-flash result-card ${solved ? 'result-ok' : 'result-bad'}`}>
       <FeedbackBurst
         key={`${solved ? 'success' : 'failure'}-${correctDisorderName}-${score}`}
         variant={solved ? 'success' : 'review'}
         density={solved ? 'full' : 'soft'}
       />
 
-      <div className="result-header-row">
-        <div>
-          <p className="result-kicker">{solved ? 'Acerto confirmado' : 'Tentativa concluida'}</p>
-          <h3 className="page-title mt-2 text-2xl md:text-3xl">{solved ? 'Resposta correta' : 'Hora de revisar o caso'}</h3>
+      <div className="result-head">
+        <span className={`tile tile-flip ${solved ? 'tile-ok' : 'tile-bad'}`}><Icon name={solved ? 'check' : 'book'} /></span>
+        <div className="min-w-0 flex-1">
+          <h3 className="h2">{solved ? 'Acertou!' : 'Não foi dessa vez'}</h3>
+          {!solved && <p className="small muted">Foi para a revisão.</p>}
         </div>
-        <div className="result-chip-stack">
-          <span className="chip rounded-full px-3 py-1 text-sm font-semibold">{solved ? 'Caso resolvido' : 'Entrou em revisao'}</span>
-          <span className="chip rounded-full px-3 py-1 text-sm font-semibold">Score {score}</span>
-        </div>
+        {showCountdown && <NextCaseCountdown />}
       </div>
 
-      <div className="result-answer-surface mt-4 p-4 md:p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Hipotese mais provavel</p>
-        <p className="page-title mt-2 text-2xl md:text-[2rem]">{correctDisorderName}</p>
-        <p className="page-subtitle mt-3 text-sm leading-relaxed md:text-base">{explanation}</p>
+      <div ref={answerRef} className="card-muted answer-box">
+        <div className="flex items-center justify-between gap-3">
+          <p className="kicker">Resposta</p>
+          {explanationReviewed && <span className="tag tag-ok"><Icon name="check" />Lida</span>}
+        </div>
+        <p className="answer-name">{correctDisorderName}</p>
+        <p className="explain">{explanation}</p>
       </div>
 
-      <div className="result-meta-grid mt-4">
-        <div className="mini-stat">
-          <span className="mini-stat-label">Score</span>
-          <span className="mini-stat-value">{score}</span>
-        </div>
-        <div className="mini-stat">
-          <span className="mini-stat-label">XP</span>
-          <span className="mini-stat-value">+{xpGained}</span>
-        </div>
-        <div className="mini-stat">
-          <span className="mini-stat-label">Moedas</span>
-          <span className="mini-stat-value">+{coinsGained}</span>
-        </div>
+      <div className="result-stats">
+        <div className="card-muted stat"><span className="stat-label">Pontuação</span><span className="stat-value">{score}</span></div>
+        <div className="card-muted stat"><span className="stat-label">XP</span><span className="stat-value">+{xpGained}</span></div>
+        <div className="card-muted stat"><span className="stat-label">Moedas</span><span className="stat-value">+{coinsGained}</span></div>
       </div>
 
-      <div className="mt-5">
-        <DifferentialList items={differentials} />
-      </div>
+      <DifferentialList items={differentials} />
 
-      <div className="result-action-row mt-5">
-        <button type="button" onClick={onAddToReview} disabled={addedToReview} className="btn-ghost">
-          {addedToReview ? 'Adicionado a revisao' : 'Adicionar a revisao'}
-        </button>
-        <button type="button" onClick={onReviewExplanation} disabled={explanationReviewed} className="btn-secondary">
-          {explanationReviewed ? 'Explicacao revisada (+20 XP)' : 'Marcar explicacao como revisada'}
+      <div className="result-actions">
+        {onShare && (
+          <button type="button" onClick={onShare} className="btn btn-primary">
+            <Icon name="share" width="18" height="18" />Compartilhar
+          </button>
+        )}
+        <button type="button" onClick={onAddToReview} disabled={addedToReview} className="btn btn-ghost">
+          <Icon name="book" width="18" height="18" />{addedToReview ? 'Na revisão' : 'Revisar depois'}
         </button>
       </div>
     </section>
   )
 }
-

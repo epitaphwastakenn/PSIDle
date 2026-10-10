@@ -89,7 +89,7 @@ export const taskTemplates: TaskTemplate[] = [
     id: 'tpl-explanation',
     type: 'read_explanation',
     title: 'Leitura crítica',
-    description: 'Marque 1 explicação como revisada após um caso.',
+    description: 'Leia a explicação de 1 caso até o fim.',
     goal: 1,
     rewardXp: 50,
     rewardCoins: 15,

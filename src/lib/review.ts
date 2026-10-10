@@ -75,7 +75,7 @@ export function getDueReviewItems(items: ReviewItem[], now = new Date()): Review
   return items
     .filter((item) => {
       const hasNeverBeenReviewed = (item.reviewHistory?.length ?? 0) === 0
-      return item.status !== 'mastered' && (hasNeverBeenReviewed || new Date(item.dueAt).getTime() <= nowMs)
+      return hasNeverBeenReviewed || new Date(item.dueAt).getTime() <= nowMs
     })
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())
 }

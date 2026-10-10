@@ -17,9 +17,9 @@ interface RewardToastProps {
 const TOAST_TITLES: Record<RewardToastVariant, string> = {
   reward: 'Recompensa recebida',
   success: 'Acerto registrado',
-  danger: 'Atencao',
-  review: 'Revisao atualizada',
-  info: 'Atualizacao',
+  danger: 'Atenção',
+  review: 'Revisão atualizada',
+  info: 'Atualização',
 }
 
 const TOAST_LABELS: Record<RewardToastVariant, string> = {
@@ -119,7 +119,7 @@ export function RewardToast({
     <div className="reward-toast-layer">
       <div
         className={[
-          'panel reward-toast reward-toast-position overflow-hidden px-3 py-2.5 text-sm font-semibold text-[color:var(--text-strong)] relative',
+          'reward-toast reward-toast-position relative overflow-hidden',
           phase === 'enter' ? 'reward-toast-entering' : 'reward-toast-exiting',
           `reward-toast-${variant}`,
         ].join(' ')}

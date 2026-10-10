@@ -57,19 +57,27 @@ export function TasksPage() {
     audioManager.playCorrect()
     pushToast(
       `Tarefa resgatada: +${result.rewardXp} XP e +${result.rewardCoins} moedas${
-        achievementResult.rewardXp ? ' (+ bonus de conquista)' : ''
+        achievementResult.rewardXp ? ' (+ bônus de conquista)' : ''
       }.`,
       achievementResult.rewardXp ? 'reward' : 'success',
-      achievementResult.rewardXp ? 'Conquista liberada' : 'Meta concluida',
+      achievementResult.rewardXp ? 'Conquista liberada' : 'Meta concluída',
     )
   }
 
+  const doneCount = tasks.filter((task) => task.completed).length
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="page-title text-3xl">Tarefas diarias</h1>
-        <p className="page-subtitle text-sm">Metas curtas para manter ritmo de estudo.</p>
-      </div>
+    <div className="page-stack">
+      <header className="page-header">
+        <h1 className="display">Tarefas</h1>
+        <div className="card task-summary">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="stat-label">Concluídas</span>
+            <span className="stat-value" style={{ fontSize: 28 }}>{doneCount}<small>/ {tasks.length}</small></span>
+          </div>
+          <div className="progress progress-ok"><span style={{ width: `${tasks.length ? (doneCount / tasks.length) * 100 : 0}%` }} /></div>
+        </div>
+      </header>
 
       <TaskList tasks={tasks} onClaim={handleClaim} />
 

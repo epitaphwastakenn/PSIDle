@@ -1,5 +1,6 @@
 import { getTodayKey } from './daily'
-import type { UserProgress } from '../types/models'
+import type { Attempt, UserProgress } from '../types/models'
+import { getAttemptDisorderId } from './study'
 
 export interface RewardBreakdown {
   xp: number
@@ -90,6 +91,11 @@ export function updateStreak(progress: UserProgress, date = new Date()): UserPro
 
 export function getBaseXpForMode(mode: 'daily' | 'practice'): number {
   return mode === 'daily' ? 100 : 50
+}
+
+export function getPracticeRewardFactor(attempts: Attempt[], disorderId: string, date: string): number {
+  const repeats = attempts.filter((attempt) => attempt.mode === 'practice' && attempt.date === date && getAttemptDisorderId(attempt) === disorderId).length
+  return repeats === 0 ? 1 : repeats === 1 ? 0.5 : repeats === 2 ? 0.25 : 0
 }
 
 export function getDailySolveSpeedXpBonus(wrongGuesses: number): number {

@@ -1,4 +1,5 @@
 import { XPBar } from '../common/XPBar'
+import { Icon } from '../common/Icon'
 
 interface ProfileStatsProps {
   level: number
@@ -11,43 +12,45 @@ interface ProfileStatsProps {
   accuracy: number
 }
 
-export function ProfileStats({ level, xp, coins, streak, totalCases, dailyCases, practiceCases, accuracy }: ProfileStatsProps) {
+export function LevelCard({ level, xp, coins, streak }: Pick<ProfileStatsProps, 'level' | 'xp' | 'coins' | 'streak'>) {
   return (
-    <section className="panel profile-stats-panel p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="card level-card" aria-label="Seu nível">
+      <div className="level-card-top">
         <div>
-          <p className="filter-label">Progresso</p>
-          <h2 className="page-title mt-1 text-2xl">Ritmo da conta</h2>
+          <p className="kicker">Nível</p>
+          <p className="level-number mt-2">{level}</p>
         </div>
-        <span className="chip rounded-full px-3 py-1 text-xs">Precisao {Math.round(accuracy * 100)}%</span>
+        <span className="icon-tile icon-tile-accent"><Icon name="spark" /></span>
       </div>
-
-      <div className="profile-stat-grid mt-4">
-        <StatCard label="Nivel" value={String(level)} tone="primary" />
-        <StatCard label="XP total" value={String(xp)} />
-        <StatCard label="Moedas" value={String(coins)} />
-        <StatCard label="Streak" value={`${streak} dia(s)`} />
-      </div>
-
-      <div className="mt-4">
-        <XPBar xp={xp} level={level} />
-      </div>
-
-      <div className="profile-stat-grid mt-4">
-        <StatCard label="Casos jogados" value={String(totalCases)} />
-        <StatCard label="Casos diarios" value={String(dailyCases)} />
-        <StatCard label="Casos de treino" value={String(practiceCases)} />
-        <StatCard label="Acertos" value={`${Math.round(accuracy * 100)}%`} tone="success" />
+      <XPBar xp={xp} level={level} />
+      <div className="level-chips">
+        <span className="tag">{xp.toLocaleString('pt-BR')} XP</span>
+        <span className="tag tag-warn">{coins} moedas</span>
+        <span className="tag tag-accent"><Icon name="flame" />{streak} {streak === 1 ? 'dia' : 'dias'}</span>
       </div>
     </section>
   )
 }
 
-function StatCard({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'primary' | 'success' }) {
+export function ProfileStats({ totalCases, dailyCases, practiceCases, accuracy }: Pick<ProfileStatsProps, 'totalCases' | 'dailyCases' | 'practiceCases' | 'accuracy'>) {
   return (
-    <div className={`stat-tile profile-stat-card profile-stat-${tone}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">{label}</p>
-      <p className="text-lg font-bold text-[color:var(--text-strong)]">{value}</p>
-    </div>
+    <section className="grid-4" aria-label="Seus números">
+      <div className="card stat-card">
+        <div className="stat-card-top"><span className="stat-label">Casos</span><span className="icon-tile"><Icon name="book" /></span></div>
+        <span className="stat-value">{totalCases}</span>
+      </div>
+      <div className="card stat-card">
+        <div className="stat-card-top"><span className="stat-label">Precisão</span><span className="icon-tile icon-tile-ok"><Icon name="check" /></span></div>
+        <span className="stat-value">{Math.round(accuracy * 100)}<small>%</small></span>
+      </div>
+      <div className="card stat-card">
+        <div className="stat-card-top"><span className="stat-label">Diários</span><span className="icon-tile icon-tile-accent"><Icon name="target" /></span></div>
+        <span className="stat-value">{dailyCases}</span>
+      </div>
+      <div className="card stat-card">
+        <div className="stat-card-top"><span className="stat-label">Treino</span><span className="icon-tile icon-tile-warn"><Icon name="shuffle" /></span></div>
+        <span className="stat-value">{practiceCases}</span>
+      </div>
+    </section>
   )
 }

@@ -33,6 +33,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check code and study engine
+        run: |
+          npm run lint
+          npm test
+
       - name: SPA fallback for GitHub Pages
         run: cp dist/index.html dist/404.html
 

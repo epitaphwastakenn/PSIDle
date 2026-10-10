@@ -1,5 +1,6 @@
 import { getTodayKey } from './daily'
-import type { DailyTask, ReviewItem, UserProgress } from '../types/models'
+import { canonicalCategory } from './study'
+import type { ActiveSession, DailyTask, ReviewItem, UserProgress } from '../types/models'
 
 const STORAGE_PREFIX = 'psidle:v1'
 
@@ -114,6 +115,38 @@ export function clearAllLocalData(): void {
   window.localStorage.removeItem(KEYS.progress)
   window.localStorage.removeItem(KEYS.tasks)
   window.localStorage.removeItem(KEYS.review)
+  window.localStorage.removeItem(`${STORAGE_PREFIX}:session:daily`)
+  window.localStorage.removeItem(`${STORAGE_PREFIX}:session:practice`)
+  window.localStorage.removeItem(`${STORAGE_PREFIX}:practice-selection`)
+}
+
+function getSessionKey(mode: ActiveSession['mode'], caseDate?: string): string {
+  return `${STORAGE_PREFIX}:session:${mode}${caseDate ? `:${caseDate}` : ''}`
+}
+
+/** Pass `caseDate` to read the in-progress session of a past daily case from the archive. */
+export function getActiveSession(mode: ActiveSession['mode'], caseDate?: string): ActiveSession | null {
+  const session = safeParse<ActiveSession | null>(localStorage.getItem(getSessionKey(mode, caseDate)), null)
+  return session && (mode !== 'daily' || caseDate || session.date === getTodayKey()) ? session : null
+}
+
+export function saveActiveSession(session: ActiveSession): void {
+  localStorage.setItem(getSessionKey(session.mode, session.caseDate), JSON.stringify(session))
+}
+
+export function clearActiveSession(mode: ActiveSession['mode'], caseDate?: string): void {
+  localStorage.removeItem(getSessionKey(mode, caseDate))
+}
+
+export function getPracticeSelection(): { category: string; difficulty: string; adaptive: boolean; servedIds: string[] } {
+  const selection = safeParse(localStorage.getItem(`${STORAGE_PREFIX}:practice-selection`), {
+    category: 'all', difficulty: 'all', adaptive: true, servedIds: [] as string[],
+  })
+  return { ...selection, category: selection.category === 'all' ? 'all' : canonicalCategory(selection.category) ?? 'all' }
+}
+
+export function savePracticeSelection(value: ReturnType<typeof getPracticeSelection>): void {
+  localStorage.setItem(`${STORAGE_PREFIX}:practice-selection`, JSON.stringify(value))
 }
 
 export function ensureDailyTasksForToday(createTasks: () => DailyTask[]): DailyTask[] {
@@ -127,4 +160,22 @@ export function ensureDailyTasksForToday(createTasks: () => DailyTask[]): DailyT
   }
 
   return tasks
+}
+
+const TUTORIAL_KEY = `${STORAGE_PREFIX}:tutorial-seen`
+
+export function hasSeenTutorial(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
+export function markTutorialSeen(): void {
+  try {
+    localStorage.setItem(TUTORIAL_KEY, '1')
+  } catch {
+    // Storage unavailable: the tutorial will simply show again next visit.
+  }
 }

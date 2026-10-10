@@ -1,31 +1,42 @@
-﻿interface AttemptHistoryProps {
+import type { GuessTone } from '../../lib/feedback'
+import { toneTileClass } from '../../lib/feedback'
+import { Icon } from '../common/Icon'
+
+interface AttemptHistoryProps {
   guesses: string[]
+  tones: GuessTone[]
 }
 
-export function AttemptHistory({ guesses }: AttemptHistoryProps) {
+export function AttemptHistory({ guesses, tones }: AttemptHistoryProps) {
   return (
-    <section className="panel panel-motion p-4 md:p-5">
-      <p className="guess-eyebrow">Tentativas</p>
-      <h3 className="page-title mt-2 text-xl">Historico de palpites</h3>
+    <section className="card side-card">
+      <div className="side-card-head">
+        <h3 className="h3">Tentativas</h3>
+        <span className="tag mono">{guesses.length}</span>
+      </div>
       {!guesses.length ? (
-        <p className="mt-2 text-sm text-[color:var(--text-muted)]">Nenhum palpite enviado ainda. Seu primeiro chute define o ritmo da rodada.</p>
+        <p className="small muted">Nenhuma ainda.</p>
       ) : (
-        <ul className="mt-4 space-y-2.5">
-          {guesses.map((guess, index) => (
-            <li
-              key={`${guess}-${index}`}
-              className="list-pop panel-soft px-3 py-3 text-sm text-[color:var(--text-body)]"
-              style={{ animationDelay: `${index * 45}ms` }}
-            >
-              <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-                Tentativa {index + 1}
-              </span>
-              <p className="mt-1 font-semibold text-[color:var(--text-strong)]">{guess}</p>
-            </li>
-          ))}
+        <ul className="attempt-list">
+          {guesses.map((guess, index) => {
+            const tone = tones[index]
+            return (
+              <li key={`${guess}-${index}`} className="attempt-item list-pop" style={{ animationDelay: `${index * 45}ms` }}>
+                <span className={`tile tile-sm ${toneTileClass[tone]}`}><Icon name={tone === 'ok' ? 'check' : 'x'} /></span>
+                <div className="min-w-0">
+                  <p>{guess}</p>
+                  {tone === 'near' && <span className="attempt-note">Mesma família</span>}
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
+      <div className="tone-legend" aria-label="Legenda">
+        <span><span className="tile tile-xs tile-ok" />Certo</span>
+        <span><span className="tile tile-xs tile-warn" />Mesma família</span>
+        <span><span className="tile tile-xs tile-bad" />Outra família</span>
+      </div>
     </section>
   )
 }
-

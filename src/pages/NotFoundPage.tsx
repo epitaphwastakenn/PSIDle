@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom'
 
 export function NotFoundPage() {
   return (
-    <section className="panel p-6 text-center">
-      <h1 className="page-title text-3xl">Pagina nao encontrada</h1>
-      <p className="mt-2 text-sm text-[color:var(--text-body)]">Esse caminho nao existe no PsiDle.</p>
-      <Link to="/" className="btn-primary mt-4 inline-flex">
-        Voltar ao inicio
-      </Link>
+    <section className="not-found">
+      <div className="tile-row">
+        {['4', '0', '4'].map((digit, index) => <span key={index} className={`tile tile-flip ${index === 1 ? 'tile-bad' : 'tile-filled'}`} style={{ animationDelay: `${index * 90}ms` }}>{digit}</span>)}
+      </div>
+      <h1 className="display">Página não encontrada.</h1>
+      <p className="lead">Esse caminho não existe no PsiDle.</p>
+      <Link to="/" className="btn btn-primary">Voltar ao início</Link>
     </section>
   )
 }

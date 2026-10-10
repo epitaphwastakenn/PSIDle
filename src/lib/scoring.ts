@@ -32,3 +32,9 @@ export function calculateScore(input: ScoreInput): ScoreResult {
     penalty,
   }
 }
+
+/** Points a solve would lose by revealing one more clue now. */
+export function getHintCost(cluesUsed: number): number {
+  const index = Math.max(0, Math.min(cluesUsed, CLUE_BASE_SCORE.length - 2))
+  return CLUE_BASE_SCORE[index] - CLUE_BASE_SCORE[index + 1]
+}

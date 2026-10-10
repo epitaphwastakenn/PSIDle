@@ -1,130 +1,107 @@
-import type { FormEvent } from 'react'
+import { useId, useState } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
+import type { Disorder } from '../../types/models'
 import { audioManager } from '../../lib/audio'
-import { FeedbackBurst } from '../common/FeedbackBurst'
+import { getAliases } from '../../lib/guessing'
+import { normalizeText } from '../../lib/normalize'
+import { Icon } from '../common/Icon'
 
 interface GuessInputProps {
   value: string
-  options: string[]
+  options: Disorder[]
   disabled?: boolean
   helperText?: string
-  feedbackType?: 'idle' | 'correct' | 'wrong'
+  feedbackType?: 'idle' | 'correct' | 'near' | 'wrong'
   feedbackMessage?: string
   feedbackPulseKey?: number
+  validationMessage?: string
   onChange: (value: string) => void
   onSubmit: () => void
+  /** Reveals the next clue early; omitted when no clue is left. */
+  onHint?: () => void
+  hintCost?: number
 }
 
 export function GuessInput({
-  value,
-  options,
-  disabled = false,
-  helperText,
-  feedbackType = 'idle',
-  feedbackMessage,
-  feedbackPulseKey = 0,
-  onChange,
-  onSubmit,
+  value, options, disabled = false, helperText, feedbackType = 'idle',
+  feedbackMessage, feedbackPulseKey = 0, validationMessage, onChange, onSubmit, onHint, hintCost,
 }: GuessInputProps) {
-  const listId = 'disorder-options'
-  const hasFeedback = feedbackType !== 'idle' && Boolean(feedbackMessage)
+  const id = useId()
+  const [open, setOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const query = normalizeText(value)
+  const matches = query.length > 0 ? options.filter((item) => getAliases(item).some((alias) => normalizeText(alias).includes(query))).slice(0, 7) : []
+  const expanded = open && !disabled && matches.length > 0
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  function select(item: Disorder) {
+    onChange(item.namePt)
+    setOpen(false)
+    setActiveIndex(-1)
     audioManager.playClick()
+  }
+
+  function handleKey(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) return
+    if (event.key === 'Escape') { setOpen(false); setActiveIndex(-1); return }
+    if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && matches.length) {
+      event.preventDefault()
+      setOpen(true)
+      setActiveIndex((current) => event.key === 'ArrowDown' ? (current + 1) % matches.length : (current <= 0 ? matches.length - 1 : current - 1))
+    }
+    if (event.key === 'Enter' && expanded && activeIndex >= 0) {
+      event.preventDefault()
+      select(matches[activeIndex])
+    }
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!value.trim() || disabled) return
+    setOpen(false)
+    setActiveIndex(-1)
     onSubmit()
   }
 
-  function handleInputChange(nextValue: string) {
-    if (nextValue.length > value.length) {
-      audioManager.playTyping()
-    }
-
-    onChange(nextValue)
-  }
-
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={[
-        'panel panel-motion guess-shell relative overflow-hidden p-4 md:p-5 transition',
-        feedbackType === 'correct'
-          ? 'feedback-correct ring-2 ring-[color:rgba(59,215,176,0.75)] bg-[color:rgba(59,215,176,0.06)]'
-          : '',
-        feedbackType === 'wrong'
-          ? 'feedback-wrong ring-2 ring-[color:rgba(255,111,159,0.75)] bg-[color:rgba(255,111,159,0.07)]'
-          : '',
-      ].join(' ')}
-    >
-      {hasFeedback ? (
-        <FeedbackBurst
-          key={`${feedbackType}-${feedbackPulseKey}`}
-          density="soft"
-          variant={feedbackType === 'correct' ? 'success' : 'danger'}
-        />
-      ) : null}
-
-      <div className="guess-header-row">
-        <div>
-          <p className="guess-eyebrow">Seu raciocinio</p>
-          <label htmlFor="guess-input" className="page-title mt-1 block text-xl md:text-2xl">
-            Qual e o melhor palpite agora?
-          </label>
+    <form onSubmit={submit} className="card guess-card">
+      <div className="guess-head">
+        <label htmlFor={id} className="h2">Sua hipótese</label>
+        {disabled ? <span className="tag">Concluído</span> : onHint && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onHint}><Icon name="bulb" width="16" height="16" />Pedir pista{hintCost ? <span className="muted mono">−{hintCost}</span> : null}</button>
+        )}
+      </div>
+      <div className="guess-controls">
+        <div className="combobox">
+          <input id={id} value={value} disabled={disabled} className="input"
+            placeholder="Nome ou sigla (ex.: TAG)" role="combobox" aria-autocomplete="list"
+            aria-expanded={expanded} aria-controls={`${id}-list`}
+            aria-activedescendant={expanded && activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
+            aria-describedby={`${id}-message`} aria-invalid={Boolean(validationMessage)}
+            autoComplete="off" autoCapitalize="none" spellCheck={false} enterKeyHint="send"
+            onKeyDown={handleKey} onFocus={() => setOpen(true)}
+            onBlur={() => { setOpen(false); setActiveIndex(-1) }}
+            onChange={(event) => {
+              if (event.target.value !== value) audioManager.playTyping()
+              onChange(event.target.value)
+              setActiveIndex(-1)
+              setOpen(true)
+            }}
+          />
+          {expanded && <ul className="suggestions" id={`${id}-list`} role="listbox" aria-label="Hipóteses disponíveis">
+            {matches.map((item, index) => <li key={item.id} id={`${id}-option-${index}`} role="option" aria-selected={activeIndex === index}
+              className={activeIndex === index ? 'suggestion active' : 'suggestion'}
+              onPointerDown={(event) => event.preventDefault()} onClick={() => select(item)}>
+              <span>{item.namePt}</span><small>{item.category}</small>
+            </li>)}
+          </ul>}
         </div>
-        <span className="guess-status-chip">{disabled ? 'Sessao concluida' : 'Resposta aberta'}</span>
+        <button type="submit" disabled={disabled || !value.trim()} className="btn btn-primary">Responder<Icon name="arrow" width="18" height="18" /></button>
       </div>
-
-      <p className="page-subtitle mt-2 text-sm leading-relaxed">
-        Digite o transtorno em portugues quando quiser testar seu raciocinio.
-      </p>
-
-      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-stretch">
-        <input
-          id="guess-input"
-          list={listId}
-          value={value}
-          disabled={disabled}
-          onChange={(event) => handleInputChange(event.target.value)}
-          placeholder="Digite o transtorno em portugues"
-          className={[
-            'field-input guess-field min-w-0 disabled:cursor-not-allowed disabled:opacity-70',
-            feedbackType === 'correct' ? 'border-[color:rgba(59,215,176,0.8)]' : '',
-            feedbackType === 'wrong' ? 'border-[color:rgba(255,111,159,0.8)]' : '',
-          ].join(' ')}
-        />
-        <button type="submit" disabled={disabled} className="btn-primary guess-submit-btn">
-          Enviar resposta
-        </button>
+      <div id={`${id}-message`} aria-live="polite">
+        {validationMessage ? <p className="validation-note">{validationMessage}</p> :
+          feedbackType !== 'idle' && feedbackMessage ? <p key={feedbackPulseKey} className={`guess-feedback ${feedbackType === 'correct' ? 'is-correct feedback-correct' : feedbackType === 'near' ? 'is-near feedback-wrong' : 'is-wrong feedback-wrong'}`}><Icon name={feedbackType === 'correct' ? 'check' : 'x'} /><span>{feedbackMessage}</span></p> :
+          helperText ? <p className="helper-note">{helperText}</p> : null}
       </div>
-
-      <datalist id={listId}>
-        {options.map((option) => (
-          <option key={option} value={option} />
-        ))}
-      </datalist>
-
-      <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        {helperText ? <p className="text-xs text-[color:var(--text-muted)]">{helperText}</p> : <span />}
-        <p className="text-xs font-medium text-[color:var(--text-muted)]">Sugestao: pense no nucleo do caso, nao em palavras isoladas.</p>
-      </div>
-
-      {hasFeedback ? (
-        <p
-          className={[
-            'mt-3 rounded-2xl border px-3 py-3 text-sm font-semibold',
-            feedbackType === 'correct'
-              ? 'feedback-correct border-[color:rgba(59,215,176,0.6)] bg-[color:rgba(59,215,176,0.16)] text-[color:var(--text-strong)]'
-              : '',
-            feedbackType === 'wrong'
-              ? 'feedback-wrong border-[color:rgba(255,111,159,0.6)] bg-[color:rgba(255,111,159,0.16)] text-[color:var(--text-strong)]'
-              : '',
-          ].join(' ')}
-          role="status"
-          aria-live="polite"
-        >
-          {feedbackType === 'correct' ? '[OK] ' : '[ERRO] '}
-          {feedbackMessage}
-        </p>
-      ) : null}
     </form>
   )
 }

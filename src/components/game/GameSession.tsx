@@ -3,19 +3,26 @@ import { disorders } from '../../data/disorders'
 import type { Attempt, Case } from '../../types/models'
 import { applyAchievementUnlocks } from '../../lib/achievementEngine'
 import { audioManager } from '../../lib/audio'
-import { getTodayKey } from '../../lib/daily'
+import { ARCHIVE_REWARD_FACTOR, getAttemptDayKey, getTodayKey, parseDayKey } from '../../lib/daily'
+import { buildShareText, getGuessTone, toneTileClass } from '../../lib/feedback'
 import { findDisorderByGuess, isCorrectGuess } from '../../lib/guessing'
+import { normalizeText } from '../../lib/normalize'
+import { difficultyLabels } from '../../lib/study'
 import {
   awardCoins,
   awardXp,
   getCompletionRewards,
   getDailySolveSpeedXpBonus,
+  getPracticeRewardFactor,
   updateStreak,
 } from '../../lib/rewards'
 import { addReviewItem } from '../../lib/review'
-import { calculateScore } from '../../lib/scoring'
+import { calculateScore, getHintCost } from '../../lib/scoring'
 import {
   ensureDailyTasksForToday,
+  getActiveSession,
+  saveActiveSession,
+  clearActiveSession,
   getReviewItems,
   getUserProgress,
   saveDailyTasks,
@@ -23,6 +30,7 @@ import {
   saveUserProgress,
 } from '../../lib/storage'
 import { generateDailyTasks, updateTaskProgress } from '../../lib/taskEngine'
+import { Icon } from '../common/Icon'
 import { RewardToast } from '../common/RewardToast'
 import type { RewardToastVariant } from '../common/RewardToast'
 import { AttemptHistory } from './AttemptHistory'
@@ -35,6 +43,9 @@ interface GameSessionProps {
   caseData: Case
   mode: 'daily' | 'practice'
   onComplete?: (attempt: Attempt) => void
+  onNext?: () => void
+  /** Day key (YYYY-MM-DD) of a past daily case being played from the archive. */
+  caseDate?: string
 }
 
 interface SessionResult {
@@ -43,7 +54,7 @@ interface SessionResult {
   coinsGained: number
 }
 
-type GuessFeedbackType = 'idle' | 'correct' | 'wrong'
+type GuessFeedbackType = 'idle' | 'correct' | 'near' | 'wrong'
 
 interface GuessFeedbackState {
   type: GuessFeedbackType
@@ -61,16 +72,29 @@ function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10_000)}`
 }
 
-export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
-  const [guesses, setGuesses] = useState<string[]>([])
-  const [wrongGuessesCount, setWrongGuessesCount] = useState(0)
-  const [revealedCluesCount, setRevealedCluesCount] = useState(0)
-  const [solved, setSolved] = useState(false)
-  const [completed, setCompleted] = useState(false)
+export function GameSession({ caseData, mode, onComplete, onNext, caseDate }: GameSessionProps) {
+  const dayKey = caseDate ?? getTodayKey()
+  const archiveDate = mode === 'daily' && dayKey !== getTodayKey() ? dayKey : undefined
+  const [savedAttempt] = useState(() => getUserProgress().attempts.findLast(
+    (attempt) => attempt.mode === mode && attempt.caseId === caseData.id && (mode !== 'daily' || getAttemptDayKey(attempt) === dayKey),
+  ))
+  const [draft] = useState(() => {
+    const session = getActiveSession(mode, archiveDate)
+    return session?.caseData.id === caseData.id ? session : null
+  })
+  const [guesses, setGuesses] = useState<string[]>(savedAttempt?.guesses ?? draft?.guesses ?? [])
+  const [wrongGuessesCount, setWrongGuessesCount] = useState(savedAttempt ? savedAttempt.guesses.length - Number(savedAttempt.solved) : draft?.wrongGuessesCount ?? 0)
+  const [revealedCluesCount, setRevealedCluesCount] = useState(savedAttempt?.cluesUsed ?? draft?.cluesUsed ?? 0)
+  const [solved, setSolved] = useState(savedAttempt?.solved ?? false)
+  const [completed, setCompleted] = useState(Boolean(savedAttempt))
   const [selectedGuess, setSelectedGuess] = useState('')
-  const [result, setResult] = useState<SessionResult | null>(null)
-  const [reviewAdded, setReviewAdded] = useState(false)
-  const [explanationReviewed, setExplanationReviewed] = useState(false)
+  const [result, setResult] = useState<SessionResult | null>(savedAttempt ? {
+    score: savedAttempt.score, xpGained: savedAttempt.xpGained ?? 0, coinsGained: savedAttempt.coinsGained ?? 0,
+  } : null)
+  const [reviewAdded, setReviewAdded] = useState(() => getReviewItems().some((item) => item.caseId === caseData.id))
+  const [explanationReviewed, setExplanationReviewed] = useState(savedAttempt?.explanationReviewed ?? false)
+  const [validationMessage, setValidationMessage] = useState('')
+  const completionLock = useRef(Boolean(savedAttempt))
   const [toastMessage, setToastMessage] = useState('')
   const [toastTitle, setToastTitle] = useState('')
   const [toastVariant, setToastVariant] = useState<RewardToastVariant>('reward')
@@ -103,6 +127,12 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
   const maxWrongGuessesAllowed = mode === 'daily' ? DAILY_MAX_ERRORS : caseData.clues.length + 1
 
   useEffect(() => {
+    if (!completed) saveActiveSession({
+      caseData, mode, date: getTodayKey(), caseDate: archiveDate, guesses, wrongGuessesCount, cluesUsed: revealedCluesCount,
+    })
+  }, [caseData, mode, archiveDate, completed, guesses, wrongGuessesCount, revealedCluesCount])
+
+  useEffect(() => {
     if (guessFeedback.type === 'idle' || completed) {
       return
     }
@@ -112,22 +142,22 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     }, FEEDBACK_RESET_MS)
 
     return () => window.clearTimeout(timeout)
-  }, [guessFeedback.type, completed])
+  }, [guessFeedback.type, guessFeedbackKey, completed])
 
   useEffect(() => {
-    if (!(mode === 'practice' && completed && !solved && result)) {
+    if (!completed || !result || savedAttempt) {
       return
     }
 
     const frame = window.requestAnimationFrame(() => {
       resultRef.current?.scrollIntoView({
-        behavior: 'smooth',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
         block: 'start',
       })
     })
 
     return () => window.cancelAnimationFrame(frame)
-  }, [mode, completed, solved, result])
+  }, [completed, result, savedAttempt])
 
   function pushToast(
     message: string,
@@ -149,6 +179,34 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     } else {
       audioManager.playWrong()
     }
+    navigator.vibrate?.(type === 'correct' ? [30, 60, 30] : type === 'near' ? 40 : 90)
+  }
+
+  function handleHint() {
+    if (completed || revealedCluesCount >= caseData.clues.length) return
+    audioManager.playClick()
+    setRevealedCluesCount(revealedCluesCount + 1)
+  }
+
+  async function handleShare() {
+    const text = buildShareText({
+      date: parseDayKey(dayKey) ?? new Date(),
+      tones: guesses.map((guess) => getGuessTone(guess, correctDisorder!)),
+      solved,
+      maxAttempts: maxWrongGuessesAllowed,
+      url: `${window.location.origin}${window.location.pathname}`,
+    })
+    audioManager.playClick()
+    try {
+      if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
+        await navigator.share({ text })
+        return
+      }
+      await navigator.clipboard.writeText(text)
+      pushToast('Cole onde quiser.', 'info', 'Resultado copiado')
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') pushToast('Não foi possível copiar.', 'danger', 'Erro')
+    }
   }
 
   function finalizeAttempt(
@@ -159,6 +217,18 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     guessedDisorderId?: string,
   ) {
     if (!correctDisorder) {
+      return
+    }
+    if (completionLock.current) return
+    completionLock.current = true
+    const existing = getUserProgress().attempts.find((attempt) =>
+      mode === 'daily' ? attempt.mode === 'daily' && getAttemptDayKey(attempt) === dayKey : attempt.caseId === caseData.id,
+    )
+    if (existing) {
+      setResult({ score: existing.score, xpGained: existing.xpGained ?? 0, coinsGained: existing.coinsGained ?? 0 })
+      setSolved(existing.solved)
+      setCompleted(true)
+      clearActiveSession(mode, archiveDate)
       return
     }
 
@@ -173,15 +243,19 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       caseId: caseData.id,
       mode,
       date: getTodayKey(),
+      caseDate: archiveDate,
       guesses: attemptGuesses,
       solved: didSolve,
       score: scoreResult.score,
       cluesUsed: finalCluesUsed,
       caseCategory: caseData.category,
       caseDifficulty: caseData.difficulty,
+      correctDisorderId: caseData.correctDisorderId,
+      caseSnapshot: caseData,
     }
 
     let progress = getUserProgress()
+    attempt.rewardFactor = mode === 'practice' ? getPracticeRewardFactor(progress.attempts, caseData.correctDisorderId, attempt.date) : archiveDate ? ARCHIVE_REWARD_FACTOR : 1
     progress = {
       ...progress,
       attempts: [...progress.attempts, attempt],
@@ -190,7 +264,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
         : [...progress.playedCaseIds, caseData.id],
     }
 
-    if (mode === 'daily') {
+    if (mode === 'daily' && !archiveDate) {
       progress = updateStreak(progress)
     }
 
@@ -200,8 +274,10 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       score: scoreResult.score,
       explanationReviewed: false,
     })
+    baseRewards.xp = Math.floor(baseRewards.xp * attempt.rewardFactor)
+    baseRewards.coins = Math.floor(baseRewards.coins * attempt.rewardFactor)
 
-    const speedBonusXp = mode === 'daily' && didSolve ? getDailySolveSpeedXpBonus(wrongGuesses) : 0
+    const speedBonusXp = mode === 'daily' && !archiveDate && didSolve ? getDailySolveSpeedXpBonus(wrongGuesses) : 0
 
     progress = awardXp(progress, baseRewards.xp)
     progress = awardCoins(progress, baseRewards.coins)
@@ -228,7 +304,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     const todaysTasks = ensureDailyTasksForToday(() => generateDailyTasks(new Date()))
     const updatedTasks = updateTaskProgress(todaysTasks, {
       type: 'case_completed',
-      mode,
+      mode: archiveDate ? 'practice' : mode,
       solved: didSolve,
       category: caseData.category,
       difficulty: caseData.difficulty,
@@ -247,10 +323,12 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       progress = awardCoins(progress, achievementResult.rewardCoins)
     }
 
-    saveUserProgress(progress)
-
     const totalXp = baseRewards.xp + speedBonusXp + achievementResult.rewardXp
     const totalCoins = baseRewards.coins + achievementResult.rewardCoins
+    attempt.xpGained = totalXp
+    attempt.coinsGained = totalCoins
+    saveUserProgress(progress)
+    clearActiveSession(mode, archiveDate)
 
     if (achievementResult.unlockedIds.length) {
       pushToast(
@@ -260,14 +338,14 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
       )
     } else if (speedBonusXp > 0) {
       pushToast(
-        `+${totalXp} XP e +${totalCoins} moedas. Bonus de velocidade: +${speedBonusXp} XP.`,
+        `+${totalXp} XP e +${totalCoins} moedas. Bônus de velocidade: +${speedBonusXp} XP.`,
         'success',
         'Acerto veloz',
       )
     } else if (didSolve) {
       pushToast(`+${totalXp} XP e +${totalCoins} moedas recebidos.`, 'success', 'Caso resolvido')
     } else {
-      pushToast(`+${totalXp} XP e +${totalCoins} moedas recebidos.`, 'review', 'Caso enviado para revisao')
+      pushToast(`+${totalXp} XP e +${totalCoins} moedas recebidos.`, 'review', 'Caso enviado para revisão')
     }
 
     setResult({
@@ -292,15 +370,24 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     }
 
     const guessedDisorder = findDisorderByGuess(guess, disorders)
+    if (!guessedDisorder) {
+      setValidationMessage('Escolha uma opção da lista.')
+      return
+    }
     const guessLabel = guessedDisorder?.namePt ?? guess
+    if (guesses.some((previous) => normalizeText(previous) === normalizeText(guessLabel))) {
+      setValidationMessage('Você já tentou essa.')
+      return
+    }
+    setValidationMessage('')
     const nextGuesses = [...guesses, guessLabel]
 
     if (isCorrectGuess(guess, correctDisorder)) {
-      const speedBonusXp = mode === 'daily' ? getDailySolveSpeedXpBonus(wrongGuessesCount) : 0
+      const speedBonusXp = mode === 'daily' && !archiveDate ? getDailySolveSpeedXpBonus(wrongGuessesCount) : 0
       const solvedMessage =
-        mode === 'daily'
-          ? `Resposta correta. Bonus por acerto cedo: +${speedBonusXp} XP.`
-          : 'Resposta correta.'
+        speedBonusXp > 0
+          ? `Correto! +${speedBonusXp} XP de bônus.`
+          : 'Correto!'
 
       setGuesses(nextGuesses)
       showGuessFeedback('correct', solvedMessage)
@@ -316,15 +403,12 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     setWrongGuessesCount(nextWrongGuessesCount)
     setRevealedCluesCount(nextClues)
 
-    if (mode === 'daily') {
-      const remaining = Math.max(0, DAILY_MAX_ERRORS - nextWrongGuessesCount)
-      if (remaining > 0) {
-        showGuessFeedback('wrong', `Palpite incorreto. Restam ${remaining} erro(s) no caso diario.`)
-      } else {
-        showGuessFeedback('wrong', 'Limite de 5 erros atingido. Caso encerrado e enviado para revisao.')
-      }
+    const near = getGuessTone(guessLabel, correctDisorder) === 'near'
+    if (nextWrongGuessesCount >= maxWrongGuessesAllowed) {
+      showGuessFeedback(near ? 'near' : 'wrong', 'Tentativas esgotadas.')
     } else {
-      showGuessFeedback('wrong', 'Palpite incorreto. Uma nova pista foi liberada.')
+      const clueNote = nextClues > revealedCluesCount ? ' Nova pista liberada.' : ''
+      showGuessFeedback(near ? 'near' : 'wrong', near ? `Mesma família, diagnóstico diferente.${clueNote}` : `Outra família diagnóstica.${clueNote}`)
     }
 
     if (nextWrongGuessesCount >= maxWrongGuessesAllowed) {
@@ -347,7 +431,7 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     })
     saveReviewItems(reviewItems)
     setReviewAdded(true)
-    pushToast('Caso adicionado a fila de revisao.', 'review', 'Revisao atualizada')
+    pushToast('Caso adicionado à fila de revisão.', 'review', 'Revisão atualizada')
   }
 
   function handleReviewExplanation() {
@@ -357,7 +441,12 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
 
     audioManager.playClick()
     let progress = getUserProgress()
-    progress = awardXp(progress, 20)
+    const attempt = progress.attempts.findLast((item) => item.caseId === caseData.id)
+    if (!attempt || attempt.explanationReviewed) return
+    const explanationXp = Math.floor(20 * (attempt.rewardFactor ?? 1))
+    progress = awardXp(progress, explanationXp)
+    progress = { ...progress, attempts: progress.attempts.map((item) => item.id === attempt.id
+      ? { ...item, explanationReviewed: true, xpGained: (item.xpGained ?? 0) + explanationXp } : item) }
     saveUserProgress(progress)
 
     const todaysTasks = ensureDailyTasksForToday(() => generateDailyTasks(new Date()))
@@ -367,82 +456,68 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
     setExplanationReviewed(true)
     setResult({
       ...result,
-      xpGained: result.xpGained + 20,
+      xpGained: result.xpGained + explanationXp,
     })
-    pushToast('+20 XP por revisar a explicacao.', 'reward', 'Explicacao revisada')
+    pushToast(explanationXp ? `+${explanationXp} XP.` : 'Registrada no histórico.', 'reward', 'Explicação lida')
   }
 
   if (!correctDisorder) {
     return (
-      <section className="panel p-4 text-sm text-[color:var(--danger)]">
-        Nao foi possivel carregar o caso.
+      <section className="callout callout-warn">
+        Não foi possível carregar o caso.
       </section>
     )
   }
 
-  const dailyHelperText =
-    mode === 'daily' && !completed
-      ? `Erros no caso diario: ${wrongGuessesCount}/${DAILY_MAX_ERRORS} (maximo de ${DAILY_MAX_ERRORS})`
-      : undefined
-
   const guessesRemaining = Math.max(0, maxWrongGuessesAllowed - wrongGuessesCount)
-  const clueProgressLabel = `${revealedCluesCount}/${caseData.clues.length}`
-  const modeLabel = mode === 'daily' ? 'Caso diario' : 'Modo treino'
-  const difficultyLabel: Record<Case['difficulty'], string> = {
-    easy: 'Facil',
-    medium: 'Media',
-    hard: 'Dificil',
-  }
+  const modeLabel = mode === 'daily' ? 'Caso diário' : 'Treino'
+  const sortedClues = caseData.clues.toSorted((a, b) => a.order - b.order)
+  const tones = guesses.map((guess) => getGuessTone(guess, correctDisorder))
+  const canHint = !completed && revealedCluesCount < caseData.clues.length
 
   return (
-    <div className="space-y-5">
-      <section className="panel session-hero p-4 md:p-5">
-        <div className="session-hero-grid">
-          <div>
-            <p className="session-eyebrow">{modeLabel}</p>
-            <h2 className="page-title mt-2 text-2xl md:text-3xl">Foco da rodada</h2>
-            <p className="page-subtitle mt-2 text-sm leading-relaxed">
-              Leia a vinheta, identifique o nucleo do quadro e acompanhe pistas, palpites e resultado em um fluxo unico.
-            </p>
-          </div>
-          <div className="session-stat-grid">
-            <div className="mini-stat">
-              <span className="mini-stat-label">Categoria</span>
-              <span className="mini-stat-value text-base md:text-lg">{caseData.category}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Dificuldade</span>
-              <span className="mini-stat-value text-base md:text-lg">{difficultyLabel[caseData.difficulty]}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">{mode === 'daily' ? 'Erros restantes' : 'Tentativas restantes'}</span>
-              <span className="mini-stat-value text-base md:text-lg">{guessesRemaining}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Pistas abertas</span>
-              <span className="mini-stat-value text-base md:text-lg">{clueProgressLabel}</span>
-            </div>
-          </div>
+    <div className="page-stack" style={{ gap: 20 }}>
+      <section className="card session-bar" aria-label="Progresso da partida">
+        <div className="session-bar-group">
+          <span className="tag tag-accent"><Icon name={mode === 'daily' ? 'target' : 'shuffle'} />{modeLabel}</span>
+          <span className="tag">{difficultyLabels[caseData.difficulty]}</span>
+        </div>
+        <div className="session-bar-group">
+          <span className="attempt-tiles" aria-label={`${guessesRemaining} tentativas restantes`}>
+            {Array.from({ length: maxWrongGuessesAllowed }, (_, i) => {
+              const tone = tones[i]
+              return <span key={i} className={tone ? `tile tile-flip ${toneTileClass[tone]}` : 'tile'}>{tone ? <Icon name={tone === 'ok' ? 'check' : 'x'} /> : null}</span>
+            })}
+          </span>
+          <span className="small muted">{completed ? 'Concluído' : `${guessesRemaining} ${guessesRemaining === 1 ? 'tentativa' : 'tentativas'}`}</span>
         </div>
       </section>
 
-      <div className="game-layout-grid">
-        <div className="space-y-4">
-          <CaseCard caseData={caseData} />
+      <div className="game-grid">
+        <div className="game-main">
+          <CaseCard caseData={caseData} revealCategory={completed} />
+          {!completed && revealedCluesCount > 0 && (
+            <div key={revealedCluesCount} className="callout mobile-clue clue-reveal">
+              <p className="kicker mb-1">Pista {revealedCluesCount}</p>
+              <p style={{ color: 'var(--text)' }}>{sortedClues[revealedCluesCount - 1].text}</p>
+            </div>
+          )}
           <GuessInput
             value={selectedGuess}
-            options={disorders.map((disorder) => disorder.namePt)}
+            options={disorders}
             disabled={completed}
-            helperText={dailyHelperText}
             feedbackType={guessFeedback.type}
             feedbackMessage={guessFeedback.message}
             feedbackPulseKey={guessFeedbackKey}
-            onChange={setSelectedGuess}
+            validationMessage={validationMessage}
+            onChange={(value) => { setSelectedGuess(value); setValidationMessage('') }}
             onSubmit={handleSubmitGuess}
+            onHint={canHint ? handleHint : undefined}
+            hintCost={canHint ? getHintCost(revealedCluesCount) : undefined}
           />
 
           {result ? (
-            <div ref={resultRef} className="result-anchor">
+            <div ref={resultRef} className="scroll-anchor grid gap-3">
               <ResultPanel
                 solved={solved}
                 score={result.score}
@@ -455,14 +530,18 @@ export function GameSession({ caseData, mode, onComplete }: GameSessionProps) {
                 onReviewExplanation={handleReviewExplanation}
                 addedToReview={reviewAdded}
                 explanationReviewed={explanationReviewed}
+                onShare={mode === 'daily' ? handleShare : undefined}
+                showCountdown={mode === 'daily' && !archiveDate}
               />
+              {mode === 'practice' && <p className="small muted">Repetir a mesma hipótese no dia reduz as recompensas.</p>}
+              {onNext && <button type="button" className="btn btn-primary btn-lg btn-block" onClick={onNext}>Próximo caso<Icon name="arrow" width="18" height="18" /></button>}
             </div>
           ) : null}
         </div>
 
-        <aside className="space-y-4">
+        <aside className="game-side">
           <ClueList clues={caseData.clues} revealedCluesCount={revealedCluesCount} />
-          <AttemptHistory guesses={guesses} />
+          <AttemptHistory guesses={guesses} tones={tones} />
         </aside>
       </div>
 

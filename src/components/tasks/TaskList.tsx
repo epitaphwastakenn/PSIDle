@@ -8,15 +8,11 @@ interface TaskListProps {
 
 export function TaskList({ tasks, onClaim }: TaskListProps) {
   if (!tasks.length) {
-    return (
-      <section className="panel p-4 text-sm text-[color:var(--text-body)]">
-        Nenhuma tarefa disponivel no momento.
-      </section>
-    )
+    return <section className="card empty-state"><p className="lead">Nenhuma tarefa disponível no momento.</p></section>
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-2">
+    <section className="grid-2">
       {tasks.map((task) => (
         <TaskCard key={task.id} task={task} onClaim={onClaim} />
       ))}

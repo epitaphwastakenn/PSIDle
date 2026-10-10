@@ -1,75 +1,72 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { audioManager } from '../../lib/audio'
+import { getDueReviewItems } from '../../lib/review'
+import { getReviewItems, getUserProgress } from '../../lib/storage'
 import type { ThemeMode } from '../../lib/theme'
+import { Icon, type IconName } from '../common/Icon'
 
-const links = [
-  { to: '/', label: 'Inicio' },
-  { to: '/daily', label: 'Caso diario' },
-  { to: '/practice', label: 'Treino' },
-  { to: '/review', label: 'Revisao' },
-  { to: '/tasks', label: 'Tarefas' },
-  { to: '/profile', label: 'Perfil' },
-  { to: '/settings', label: 'Config.' },
-  { to: '/about', label: 'Sobre' },
+const links: Array<{ to: string; label: string; short: string; icon: IconName }> = [
+  { to: '/', label: 'Início', short: 'Início', icon: 'home' },
+  { to: '/daily', label: 'Caso diário', short: 'Diário', icon: 'target' },
+  { to: '/practice', label: 'Treino', short: 'Treino', icon: 'shuffle' },
+  { to: '/review', label: 'Revisão', short: 'Revisão', icon: 'book' },
+  { to: '/tasks', label: 'Tarefas', short: 'Tarefas', icon: 'list' },
 ]
 
-function getLinkClass(isActive: boolean): string {
-  return isActive ? 'top-nav-link top-nav-link-active' : 'top-nav-link'
-}
+interface NavbarProps { theme: ThemeMode; onToggleTheme: () => void; onHelp: () => void }
 
-interface NavbarProps {
-  theme: ThemeMode
-  onToggleTheme: () => void
-}
-
-export function Navbar({ theme, onToggleTheme }: NavbarProps) {
-  const location = useLocation()
-  const activeLink = links.find((link) => link.to === location.pathname) ?? links[0]
+export function Navbar({ theme, onToggleTheme, onHelp }: NavbarProps) {
+  const progress = getUserProgress()
+  const due = getDueReviewItems(getReviewItems()).length
+  const initial = (progress.displayName?.trim().charAt(0) || 'ψ').toUpperCase()
+  const badge = (to: string) => to === '/review' && due > 0 ? <span className="nav-badge">{due > 9 ? '9+' : due}</span> : null
 
   return (
-    <header className="site-header nav-shell sticky top-0 z-30 border-b border-[color:var(--border-soft)]">
-      <div className="mx-auto w-full max-w-7xl px-4 py-3 md:px-5 xl:px-6">
-        <div className="nav-panel">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="brand-mark shrink-0">PS</span>
-              <div className="min-w-0">
-                <p className="page-title truncate text-xl md:text-2xl">PsiDle</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="nav-kicker">Estudo clinico gamificado</span>
-                  <span className="nav-current">Agora: {activeLink.label}</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="theme-toggle btn-ghost nav-theme-toggle px-3 py-2 text-xs md:text-sm"
-              onClick={() => {
-                audioManager.playClick()
-                onToggleTheme()
-              }}
-            >
-              {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+    <>
+      <header className="site-header">
+        <a className="skip-link" href="#main-content" onClick={(event) => {
+          event.preventDefault()
+          document.getElementById('main-content')!.focus()
+        }}>Pular para o conteúdo</a>
+        <div className="header-inner">
+          <Link to="/" className="brand" aria-label="PsiDle, início">
+            <span className="brand-mark" aria-hidden="true">ψ</span>psidle
+          </Link>
+          <nav className="primary-nav" aria-label="Navegação principal">
+            {links.map((link) => (
+              <NavLink key={link.to} to={link.to} end={link.to === '/'} onClick={() => audioManager.playClick()}
+                className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}>
+                {link.label}{badge(link.to)}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="header-actions">
+            <button type="button" className="icon-btn" aria-label="Como jogar" title="Como jogar" onClick={() => { audioManager.playClick(); onHelp() }}>
+              <Icon name="help" />
             </button>
-          </div>
-
-          <div className="mt-4">
-            <nav className="nav-scroll no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1">
-              {links.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => audioManager.playClick()}
-                  className={({ isActive }) => getLinkClass(isActive)}
-                >
-                  {link.label}
-                </NavLink>
-              ))}
-            </nav>
+            <button type="button" className="icon-btn" aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'} onClick={() => { audioManager.playClick(); onToggleTheme() }}>
+              <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+            </button>
+            <NavLink to="/settings" aria-label="Configurações" title="Configurações" onClick={() => audioManager.playClick()}
+              className={({ isActive }) => `icon-btn${isActive ? ' icon-btn-active' : ''}`}>
+              <Icon name="sliders" />
+            </NavLink>
+            <NavLink to="/profile" aria-label="Perfil" title="Perfil" onClick={() => audioManager.playClick()}
+              className={({ isActive }) => `avatar-btn${isActive ? ' avatar-btn-active' : ''}`}>
+              {initial}
+            </NavLink>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <nav className="tabbar" aria-label="Navegação principal">
+        {links.map((link) => (
+          <NavLink key={link.to} to={link.to} end={link.to === '/'} onClick={() => audioManager.playClick()}
+            className={({ isActive }) => `tab-link${isActive ? ' tab-link-active' : ''}`}>
+            <Icon name={link.icon} />{link.short}{badge(link.to)}
+          </NavLink>
+        ))}
+      </nav>
+    </>
   )
 }

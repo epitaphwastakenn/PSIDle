@@ -1,132 +1,105 @@
-﻿import { Link } from 'react-router-dom'
+import { lazy, Suspense, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Icon } from '../components/common/Icon'
 import { XPBar } from '../components/common/XPBar'
 import { audioManager } from '../lib/audio'
-import { getDailyTasks, getReviewItems, getUserProgress } from '../lib/storage'
+import { findDailyAttempt, getTodayKey } from '../lib/daily'
+import { getDueReviewItems } from '../lib/review'
+import { ensureDailyTasksForToday, getActiveSession, getReviewItems, getUserProgress } from '../lib/storage'
+import { generateDailyTasks } from '../lib/taskEngine'
+
+const HeroScene = lazy(() => import('../components/common/HeroScene').then((module) => ({ default: module.HeroScene })))
 
 export function HomePage() {
   const progress = getUserProgress()
-  const reviewItems = getReviewItems()
-  const dailyTasks = getDailyTasks()
-  const displayName = progress.displayName?.trim()
-  const dueReviews = reviewItems.filter((item) => item.status === 'due').length
-  const readyTasks = dailyTasks.filter((task) => task.completed && !task.claimed).length
-  const solvedAttempts = progress.attempts.filter((attempt) => attempt.solved).length
+  const [tasks] = useState(() => ensureDailyTasksForToday(() => generateDailyTasks(new Date())))
+  const due = getDueReviewItems(getReviewItems()).length
+  const daily = findDailyAttempt(progress.attempts, getTodayKey())
+  const practice = getActiveSession('practice')
+  const solved = progress.attempts.filter((attempt) => attempt.solved).length
+  const doneTasks = tasks.filter((task) => task.completed).length
+  const readyTasks = tasks.filter((task) => task.completed && !task.claimed).length
+  const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
-    <div className="space-y-6">
-      <section className="hero-panel hero-shell panel overflow-hidden p-5 md:p-7">
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-          <div>
-            <div className="hero-kicker-row">
-              <span className="hero-kicker">Psicologia em formato de jogo</span>
-              <span className="hero-subkicker">Casos ficticios • estudo ativo • revisao</span>
-            </div>
-
-            <h1 className="page-title mt-4 text-4xl md:text-5xl xl:text-6xl">
-              Treino clinico com cara de produto real.
-            </h1>
-            <p className="mt-4 text-sm font-semibold text-[color:var(--accent)] md:text-base">
-              {displayName ? `Bem vindo de volta, ${displayName}.` : 'Entre, escolha um foco e comece a estudar.'}
-            </p>
-            <p className="page-subtitle mt-3 max-w-2xl text-sm leading-relaxed md:text-base">
-              Leia vinhetas, diferencie hipoteses, receba feedback imediato e transforme erro em revisao estruturada.
-              O fluxo foi pensado para estudo rapido no celular e sessao longa no desktop.
-            </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <Link to="/daily" onClick={() => audioManager.playClick()} className="btn-primary hero-cta text-center">
-                Jogar caso diario
-              </Link>
-              <Link to="/practice" onClick={() => audioManager.playClick()} className="btn-secondary hero-cta text-center">
-                Modo treino
-              </Link>
-              <Link to="/review" onClick={() => audioManager.playClick()} className="btn-ghost hero-cta text-center">
-                Revisao
-              </Link>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="hero-metric panel-soft p-3">
-                <p className="hero-metric-label">Casos resolvidos</p>
-                <p className="hero-metric-value">{solvedAttempts}</p>
-              </div>
-              <div className="hero-metric panel-soft p-3">
-                <p className="hero-metric-label">Revisoes pendentes</p>
-                <p className="hero-metric-value">{dueReviews}</p>
-              </div>
-              <div className="hero-metric panel-soft p-3">
-                <p className="hero-metric-label">Tarefas prontas</p>
-                <p className="hero-metric-value">{readyTasks}</p>
-              </div>
-            </div>
+    <div className="page-stack">
+      <section className="home-hero">
+        <div className="home-hero-copy">
+          <span className="kicker kicker-dot">{progress.displayName ? `Olá, ${progress.displayName} · ${today}` : today}</span>
+          <h1 className="display-xl">Um caso clínico. <em>Cinco</em> tentativas.</h1>
+          <p className="lead">Cada erro revela uma nova pista.</p>
+          <div className="home-hero-actions">
+            <Link className="btn btn-primary btn-lg" to="/daily" onClick={() => audioManager.playClick()}>
+              <Icon name="play" width="18" height="18" />
+              {daily ? 'Ver resultado' : getActiveSession('daily') ? 'Continuar' : 'Jogar o caso de hoje'}
+            </Link>
+            <Link className="btn btn-secondary btn-lg" to="/practice" onClick={() => audioManager.playClick()}>
+              <Icon name="shuffle" width="18" height="18" />Treino
+            </Link>
           </div>
-
-          <div className="hero-sidebar space-y-3">
-            <div className="summary-surface p-4 md:p-5">
-              <p className="hero-section-label">Ritmo da sessao</p>
-              <div className="mt-3 space-y-3">
-                <div className="hero-rail-item">
-                  <span className="hero-rail-index">01</span>
-                  <div>
-                    <p className="font-semibold text-[color:var(--text-strong)]">Caso diario</p>
-                    <p className="text-sm text-[color:var(--text-body)]">Um desafio fixo por dia para criar consistencia.</p>
-                  </div>
-                </div>
-                <div className="hero-rail-item">
-                  <span className="hero-rail-index">02</span>
-                  <div>
-                    <p className="font-semibold text-[color:var(--text-strong)]">Treino filtrado</p>
-                    <p className="text-sm text-[color:var(--text-body)]">Escolha categoria e dificuldade com menos friccao.</p>
-                  </div>
-                </div>
-                <div className="hero-rail-item">
-                  <span className="hero-rail-index">03</span>
-                  <div>
-                    <p className="font-semibold text-[color:var(--text-strong)]">Revisao ativa</p>
-                    <p className="text-sm text-[color:var(--text-body)]">Erros voltam como material util, nao como fim de tentativa.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="summary-surface p-4 md:p-5">
-              <p className="hero-section-label">Leitura do produto</p>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="chip rounded-full px-3 py-1">Casos ficticios</span>
-                <span className="chip rounded-full px-3 py-1">Feedback imediato</span>
-                <span className="chip rounded-full px-3 py-1">Nao diagnostico real</span>
-              </div>
-            </div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            {daily && <span className="home-hero-note"><span className="status-dot" />{daily.solved ? 'Resolvido hoje' : 'Em revisão'} · {daily.score} pontos</span>}
+            <Link to="/archive" className="text-link" onClick={() => audioManager.playClick()}>Dias anteriores<Icon name="arrow" /></Link>
           </div>
+        </div>
+        <div className="hero-visual">
+          <div className="hero-glow" aria-hidden="true" />
+          <Suspense fallback={null}><HeroScene /></Suspense>
+          <div className="hero-chip hero-chip-a" aria-hidden="true"><span className="tile tile-xs tile-warn" />Nova pista</div>
+          <div className="hero-chip hero-chip-b" aria-hidden="true"><span className="tile tile-xs tile-ok" />Resolvido · +180 XP</div>
         </div>
       </section>
 
-      <section className="panel p-5 md:p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="page-title text-2xl md:text-3xl">Seu progresso</h2>
-            <p className="page-subtitle mt-1 text-sm">Continue estudando para subir nivel, ganhar moedas e manter streak.</p>
-          </div>
-          <div className="quick-grid">
-            <div className="mini-stat">
-              <span className="mini-stat-label">XP</span>
-              <span className="mini-stat-value">{progress.xp}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Moedas</span>
-              <span className="mini-stat-value">{progress.coins}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Streak</span>
-              <span className="mini-stat-value">{progress.streak}</span>
-            </div>
-          </div>
-        </div>
-        <div className="mt-4">
+      <section aria-label="Seu progresso" className="grid-4">
+        <div className="card stat-card">
+          <div className="stat-card-top"><span className="stat-label">Nível</span><span className="icon-tile icon-tile-accent"><Icon name="spark" /></span></div>
+          <span className="stat-value">{progress.level}</span>
           <XPBar xp={progress.xp} level={progress.level} />
         </div>
+        <div className="card stat-card">
+          <div className="stat-card-top"><span className="stat-label">Resolvidos</span><span className="icon-tile icon-tile-ok"><Icon name="check" /></span></div>
+          <span className="stat-value">{solved}<small>de {progress.attempts.length}</small></span>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-card-top"><span className="stat-label">Sequência</span><span className="icon-tile icon-tile-warn"><Icon name="flame" /></span></div>
+          <span className="stat-value">{progress.streak}<small>{progress.streak === 1 ? 'dia' : 'dias'}</small></span>
+        </div>
+        <Link to="/review" className="card card-link stat-card" onClick={() => audioManager.playClick()}>
+          <div className="stat-card-top"><span className="stat-label">Para revisar</span><span className="icon-tile"><Icon name="book" /></span></div>
+          <span className="stat-value">{due}</span>
+        </Link>
+      </section>
+
+      <section className="grid-3" aria-label="Continue estudando">
+        <Link to="/practice" className="card card-link mode-card" onClick={() => audioManager.playClick()}>
+          <span className="icon-tile icon-tile-accent"><Icon name="shuffle" /></span>
+          <h2 className="h2">Treino</h2>
+          <p>Escolha tema e dificuldade.</p>
+          <span className="text-link">{practice ? 'Continuar' : 'Começar'}<Icon name="arrow" className="arrow-icon" /></span>
+        </Link>
+        <Link to="/review" className="card card-link mode-card" onClick={() => audioManager.playClick()}>
+          <span className="icon-tile icon-tile-warn"><Icon name="book" /></span>
+          <h2 className="h2">Revisão</h2>
+          <p>{due ? `${due} ${due === 1 ? 'caso pendente' : 'casos pendentes'}.` : 'Tudo em dia.'}</p>
+          <span className="text-link">Abrir<Icon name="arrow" className="arrow-icon" /></span>
+        </Link>
+        <section className="card mode-card">
+          <div className="stat-card-top">
+            <h2 className="h2">Tarefas</h2>
+            <span className="tag">{doneTasks}/{tasks.length}</span>
+          </div>
+          <ul className="task-mini">
+            {tasks.map((task) => (
+              <li key={task.id}>
+                <span className={`tile tile-sm ${task.completed ? 'tile-ok' : ''}`}>{task.completed && <Icon name="check" />}</span>
+                <span>{task.title}</span>
+                <span className="mono small muted">+{task.rewardXp}</span>
+              </li>
+            ))}
+          </ul>
+          <Link to="/tasks" className="text-link">{readyTasks ? `Resgatar (${readyTasks})` : 'Ver todas'}<Icon name="arrow" /></Link>
+        </section>
       </section>
     </div>
   )
 }
-

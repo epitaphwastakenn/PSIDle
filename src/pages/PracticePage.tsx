@@ -1,169 +1,110 @@
-﻿import { useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GameSession } from '../components/game/GameSession'
+import { Icon } from '../components/common/Icon'
 import { disorderCategories } from '../data/disorders'
 import { audioManager } from '../lib/audio'
 import { generatePracticeProceduralCase } from '../lib/proceduralCases'
-import type { Case, Difficulty } from '../types/models'
+import { getActiveSession, getPracticeSelection, getUserProgress, savePracticeSelection } from '../lib/storage'
+import { difficultyLabels, getPracticePool, selectPracticeDisorder } from '../lib/study'
+import type { Case } from '../types/models'
 
-type DifficultyFilter = Difficulty | 'all'
-
-function buildSeed(): string {
-  return `practice-${Date.now()}-${Math.random()}`
-}
-
-const difficultyOptions: Array<{ value: DifficultyFilter; label: string }> = [
-  { value: 'all', label: 'Todas' },
-  { value: 'easy', label: 'Facil' },
-  { value: 'medium', label: 'Media' },
-  { value: 'hard', label: 'Dificil' },
-]
-
-function getDifficultyLabel(value: DifficultyFilter): string {
-  return difficultyOptions.find((option) => option.value === value)?.label ?? 'Todas'
+function createPracticeCase(selection: ReturnType<typeof getPracticeSelection>): Case | null {
+  const { attempts } = getUserProgress()
+  const current = getActiveSession('practice')
+  const disorder = selectPracticeDisorder({
+    pool: getPracticePool(selection.category, selection.difficulty),
+    attempts,
+    servedIds: selection.servedIds,
+    adaptive: selection.adaptive,
+  })
+  if (!disorder) return null
+  const recentCases = attempts.flatMap((attempt) => attempt.caseSnapshot ? [attempt.caseSnapshot] : [])
+  if (current) recentCases.push(current.caseData)
+  return generatePracticeProceduralCase({ disorderId: disorder.id, seed: crypto.randomUUID(), recentCases })
 }
 
 export function PracticePage() {
-  const categories = useMemo(() => disorderCategories, [])
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all')
-  const [recentDisorderIds, setRecentDisorderIds] = useState<string[]>([])
-  const [selectedCase, setSelectedCase] = useState<Case>(() =>
-    generatePracticeProceduralCase({
-      seed: buildSeed(),
-    }),
+  const [selection, setSelection] = useState(getPracticeSelection)
+  const [selectedCase, setSelectedCase] = useState<Case | null>(() =>
+    getActiveSession('practice')?.caseData ?? createPracticeCase(getPracticeSelection()),
   )
+  const [confirmReplace, setConfirmReplace] = useState(false)
+  const [completed, setCompleted] = useState(false)
+  const caseRef = useRef<HTMLDivElement>(null)
+  const scrollToNewCase = useRef(false)
+  const pool = getPracticePool(selection.category, selection.difficulty)
 
-  function generateCaseWithFilters(seed: string): Case {
-    return generatePracticeProceduralCase({
-      seed,
-      category: categoryFilter === 'all' ? undefined : categoryFilter,
-      difficulty: difficultyFilter === 'all' ? undefined : difficultyFilter,
-      excludeDisorderIds: Array.from(new Set([selectedCase.correctDisorderId, ...recentDisorderIds.slice(-7)])),
-    })
+  useEffect(() => {
+    if (selectedCase) {
+      const saved = getPracticeSelection()
+      if (saved.servedIds.at(-1) !== selectedCase.correctDisorderId) {
+        savePracticeSelection({ ...saved, servedIds: [...saved.servedIds.slice(-49), selectedCase.correctDisorderId] })
+      }
+    }
+    if (scrollToNewCase.current) {
+      scrollToNewCase.current = false
+      const frame = window.requestAnimationFrame(() => caseRef.current!.scrollIntoView({
+        block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      }))
+      return () => window.cancelAnimationFrame(frame)
+    }
+  }, [selectedCase])
+
+  function updateSelection(partial: Partial<typeof selection>) {
+    const next = { ...getPracticeSelection(), ...partial }
+    setSelection(next)
+    savePracticeSelection(next)
   }
 
-  function pickRandomCase() {
+  function nextCase(force = false) {
+    const current = getActiveSession('practice')
+    if (!force && !completed && current && current.guesses.length > 0) {
+      setConfirmReplace(true)
+      return
+    }
     audioManager.playClick()
-    const generated = generateCaseWithFilters(buildSeed())
-    setSelectedCase(generated)
-    setRecentDisorderIds((previous) => [...previous.slice(-15), generated.correctDisorderId])
+    scrollToNewCase.current = true
+    setSelectedCase(createPracticeCase(getPracticeSelection()))
+    setCompleted(false)
+    setConfirmReplace(false)
   }
-
-  const activeCategoryLabel = categoryFilter === 'all' ? 'Todas as categorias' : categoryFilter
-  const activeDifficultyLabel = getDifficultyLabel(difficultyFilter)
 
   return (
-    <div className="space-y-4">
-      <section className="panel practice-hero p-4 md:p-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <div className="hero-kicker-row">
-              <span className="hero-kicker">Modo treino</span>
-              <span className="hero-subkicker">Casos ilimitados • filtros ativos • repeticao reduzida</span>
-            </div>
-            <h1 className="page-title mt-3 text-2xl md:text-4xl">Treino guiado para acertar com mais clareza.</h1>
-            <p className="page-subtitle mt-2 max-w-2xl text-sm leading-relaxed md:text-base">
-              Escolha o foco da sessao, gere um caso novo e receba pistas, historico e resultado organizados para leitura rapida.
-            </p>
-          </div>
+    <div className="page-stack">
+      <header className="page-header">
+        <h1 className="display">Treino</h1>
+      </header>
 
-          <div className="practice-summary-grid">
-            <div className="mini-stat">
-              <span className="mini-stat-label">Categoria</span>
-              <span className="mini-stat-value text-base md:text-lg">{activeCategoryLabel}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Dificuldade</span>
-              <span className="mini-stat-value text-base md:text-lg">{activeDifficultyLabel}</span>
-            </div>
-            <div className="mini-stat">
-              <span className="mini-stat-label">Sessao</span>
-              <span className="mini-stat-value text-base md:text-lg">Treino livre</span>
-            </div>
-          </div>
+      <section className="card filter-card" aria-label="Configurar próximo caso">
+        <div className="filter-grid">
+          <label className="field">Tema
+            <select className="select" value={selection.category} onChange={(event) => updateSelection({ category: event.target.value })}>
+              <option value="all">Todos os temas</option>
+              {disorderCategories.map((category) => <option key={category}>{category}</option>)}
+            </select>
+          </label>
+          <label className="field">Dificuldade
+            <select className="select" value={selection.difficulty} onChange={(event) => updateSelection({ difficulty: event.target.value })}>
+              <option value="all">Todas</option>
+              {Object.entries(difficultyLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          <button type="button" className="btn btn-primary" disabled={!pool.length} onClick={() => nextCase()}><Icon name="shuffle" width="18" height="18" />Novo caso</button>
         </div>
+        <label className="switch-row">
+          <input type="checkbox" className="switch" checked={selection.adaptive} onChange={(event) => updateSelection({ adaptive: event.target.checked })} />
+          <span><strong>Seleção inteligente</strong><span>Prioriza temas novos e seus erros.</span></span>
+        </label>
+        {!pool.length && <p className="notice" role="status">Nenhum caso com esses filtros.</p>}
+        {pool.length === 1 && <p className="notice" role="status">Só uma hipótese possível com esses filtros.</p>}
+        {confirmReplace && <div className="callout replace-prompt" role="group" aria-label="Trocar caso em andamento">
+          <p>Descartar o caso em andamento?</p>
+          <button className="btn btn-ghost btn-sm" onClick={() => setConfirmReplace(false)}>Continuar</button>
+          <button className="btn btn-primary btn-sm" onClick={() => nextCase(true)}>Trocar caso</button>
+        </div>}
       </section>
 
-      <section className="panel practice-control-panel p-4 md:p-5">
-        <div className="practice-control-grid">
-          <div className="practice-control-section">
-            <div className="filter-heading-row">
-              <div>
-                <p className="filter-label">Categoria</p>
-                <p className="filter-caption">Defina o territorio clinico que voce quer praticar agora.</p>
-              </div>
-              <span className="filter-current">Ativa: {activeCategoryLabel}</span>
-            </div>
-            <div className="category-choice-grid mt-3">
-              <button
-                type="button"
-                aria-pressed={categoryFilter === 'all'}
-                onClick={() => {
-                  audioManager.playClick()
-                  setCategoryFilter('all')
-                }}
-                className={categoryFilter === 'all' ? 'filter-pill filter-pill-active' : 'filter-pill'}
-              >
-                Todas
-              </button>
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  aria-pressed={categoryFilter === category}
-                  onClick={() => {
-                    audioManager.playClick()
-                    setCategoryFilter(category)
-                  }}
-                  className={categoryFilter === category ? 'filter-pill filter-pill-active' : 'filter-pill'}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="practice-control-stack">
-            <div className="practice-control-section">
-              <div className="filter-heading-row">
-                <div>
-                  <p className="filter-label">Dificuldade</p>
-                  <p className="filter-caption">Ajuste a ambiguidade sem sair do fluxo.</p>
-                </div>
-                <span className="filter-current">Ativa: {activeDifficultyLabel}</span>
-              </div>
-              <div className="segmented-control mt-3">
-                {difficultyOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    aria-pressed={difficultyFilter === option.value}
-                    onClick={() => {
-                      audioManager.playClick()
-                      setDifficultyFilter(option.value)
-                    }}
-                    className={difficultyFilter === option.value ? 'segment-btn segment-btn-active' : 'segment-btn'}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="practice-action-bar">
-              <div className="practice-action-copy">
-                <p className="filter-label">Nova vinheta</p>
-                <p className="filter-caption">Evita repeticoes recentes e respeita seus filtros.</p>
-              </div>
-              <button type="button" onClick={pickRandomCase} className="btn-primary practice-generate-btn">
-                Gerar novo caso
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <GameSession key={selectedCase.id} caseData={selectedCase} mode="practice" />
+      <div ref={caseRef} className="scroll-anchor">{selectedCase && <GameSession key={selectedCase.id} caseData={selectedCase} mode="practice" onComplete={() => setCompleted(true)} onNext={() => nextCase(true)} />}</div>
     </div>
   )
 }

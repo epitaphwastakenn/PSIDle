@@ -4,6 +4,7 @@ import { AppShell } from './components/layout/AppShell'
 import { audioManager } from './lib/audio'
 import { getUserSettings } from './lib/settings'
 import { AboutPage } from './pages/AboutPage'
+import { ArchivePage } from './pages/ArchivePage'
 import { DailyPage } from './pages/DailyPage'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -46,6 +47,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/daily" element={<DailyPage />} />
+        <Route path="/daily/:date" element={<DailyPage />} />
+        <Route path="/archive" element={<ArchivePage />} />
         <Route path="/practice" element={<PracticePage />} />
         <Route path="/review" element={<ReviewPage />} />
         <Route path="/tasks" element={<TasksPage />} />
