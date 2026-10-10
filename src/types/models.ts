@@ -44,6 +44,8 @@ export interface Case {
   differentials: CaseDifferential[]
   tags: string[]
   sourceNote?: string
+  /** Online reference the case was checked against. */
+  reference?: { label: string; url: string }
   status: 'approved' | 'draft'
 }
 

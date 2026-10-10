@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { disorders } from '../../data/disorders'
+import { disorders, findDisorder } from '../../data/disorders'
 import type { Attempt, Case } from '../../types/models'
 import { applyAchievementUnlocks } from '../../lib/achievementEngine'
 import { audioManager } from '../../lib/audio'
@@ -108,14 +108,14 @@ export function GameSession({ caseData, mode, onComplete, onNext, caseDate }: Ga
   const resultRef = useRef<HTMLDivElement>(null)
 
   const correctDisorder = useMemo(
-    () => disorders.find((disorder) => disorder.id === caseData.correctDisorderId),
+    () => findDisorder(caseData.correctDisorderId),
     [caseData.correctDisorderId],
   )
 
   const differentialItems = useMemo(
     () =>
       caseData.differentials.map((item) => {
-        const disorder = disorders.find((entry) => entry.id === item.disorderId)
+        const disorder = findDisorder(item.disorderId)
         return {
           disorderName: disorder?.namePt ?? item.disorderId,
           whyNot: item.whyNot,
@@ -186,6 +186,33 @@ export function GameSession({ caseData, mode, onComplete, onNext, caseDate }: Ga
     if (completed || revealedCluesCount >= caseData.clues.length) return
     audioManager.playClick()
     setRevealedCluesCount(revealedCluesCount + 1)
+  }
+
+  async function handleShareImage() {
+    audioManager.playClick()
+    try {
+      const { renderStoryImage } = await import('../../lib/three/storyImage')
+      const blob = await renderStoryImage({
+        tones: guesses.map((guess) => getGuessTone(guess, correctDisorder!)),
+        slots: maxWrongGuessesAllowed,
+        solved,
+        date: parseDayKey(dayKey) ?? new Date(),
+        url: `${window.location.origin}${window.location.pathname}`,
+      })
+      const file = new File([blob], `psidle-${dayKey}.png`, { type: 'image/png' })
+      if (navigator.canShare?.({ files: [file] }) && window.matchMedia('(pointer: coarse)').matches) {
+        await navigator.share({ files: [file] })
+        return
+      }
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = file.name
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 4000)
+      pushToast('Imagem salva nos downloads.', 'info', 'Pronto para os stories')
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') pushToast('Não foi possível gerar a imagem.', 'danger', 'Erro')
+    }
   }
 
   async function handleShare() {
@@ -531,7 +558,11 @@ export function GameSession({ caseData, mode, onComplete, onNext, caseDate }: Ga
                 addedToReview={reviewAdded}
                 explanationReviewed={explanationReviewed}
                 onShare={mode === 'daily' ? handleShare : undefined}
+                onShareImage={mode === 'daily' ? handleShareImage : undefined}
                 showCountdown={mode === 'daily' && !archiveDate}
+                tones={tones}
+                slots={maxWrongGuessesAllowed}
+                reference={caseData.reference}
               />
               {mode === 'practice' && <p className="small muted">Repetir a mesma hipótese no dia reduz as recompensas.</p>}
               {onNext && <button type="button" className="btn btn-primary btn-lg btn-block" onClick={onNext}>Próximo caso<Icon name="arrow" width="18" height="18" /></button>}

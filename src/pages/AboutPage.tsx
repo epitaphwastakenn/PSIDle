@@ -17,7 +17,7 @@ export function AboutPage() {
         <section className="card prose-card">
           <span className="icon-tile icon-tile-ok"><Icon name="book" /></span>
           <h2 className="h2">Para quê</h2>
-          <p>Praticar raciocínio clínico e diagnóstico diferencial.</p>
+          <p>Praticar raciocínio clínico e diagnóstico diferencial. Os casos seguem os critérios do DSM-5-TR e cada um traz a fonte em que foi conferido.</p>
         </section>
         <section className="card prose-card">
           <span className="icon-tile icon-tile-warn"><Icon name="info" /></span>

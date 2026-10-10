@@ -1,13 +1,15 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import {
+  addStudioLights, createConfetti, createRenderer, createTile, disposeScene, easeInOut, loadDisplayFont,
+  onThemeChange, prefersReducedMotion, readPalette, toneColor, trackHost, type TileTone,
+} from '../../lib/three/kit'
 
 const LETTERS = ['P', 'S', 'I', 'D', 'L', 'E']
-type Tone = 'ok' | 'bad' | 'warn'
-// Each round reveals one row of guesses; the last one is the solved word.
-const ROUNDS: Tone[][] = [
-  ['bad', 'warn', 'bad', 'bad', 'warn', 'bad'],
-  ['warn', 'ok', 'bad', 'ok', 'warn', 'ok'],
+// Attract mode: each round reveals one row of guesses; the last one is the solved word.
+const ROUNDS: TileTone[][] = [
+  ['far', 'near', 'far', 'far', 'near', 'far'],
+  ['near', 'ok', 'far', 'ok', 'near', 'ok'],
   ['ok', 'ok', 'ok', 'ok', 'ok', 'ok'],
 ]
 const FLIP_MS = 520
@@ -15,72 +17,44 @@ const STAGGER_MS = 170
 const HOLD_MS = 2200
 const NODE_COUNT = 90
 
-interface Palette { accent: string; ok: string; bad: string; warn: string; tile: string; text: string }
-
-function readPalette(): Palette {
-  const style = getComputedStyle(document.documentElement)
-  const read = (name: string) => style.getPropertyValue(name).trim() || '#888888'
-  return { accent: read('--accent'), ok: read('--ok'), bad: read('--bad'), warn: read('--warn'), tile: read('--surface-3'), text: read('--text') }
+interface HeroSceneProps {
+  /**
+   * Today's result, one entry per tile (null keeps the tile face-down). When set, the tiles reveal it
+   * once and hold; when omitted the scene loops through example rounds.
+   */
+  finalTones?: Array<TileTone | null>
 }
 
-function drawFace(canvas: HTMLCanvasElement, letter: string, background: string, color: string) {
-  const ctx = canvas.getContext('2d')!
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.fillStyle = background
-  ctx.beginPath()
-  ctx.roundRect(0, 0, canvas.width, canvas.height, 40)
-  ctx.fill()
-  ctx.fillStyle = color
-  ctx.font = '700 150px "Bricolage Grotesque", Geist, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(letter, canvas.width / 2, canvas.height / 2 + 8)
-}
-
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
-
-export function HeroScene() {
+export function HeroScene({ finalTones }: HeroSceneProps) {
   const hostRef = useRef<HTMLDivElement>(null)
+  const tonesKey = finalTones?.map((tone) => tone ?? '-').join(',') ?? ''
 
   useEffect(() => {
     const host = hostRef.current!
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let renderer: THREE.WebGLRenderer
-    try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' })
-    } catch {
-      // No WebGL: the hero keeps its glow and chips without the 3D scene.
-      return
-    }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.outputColorSpace = THREE.SRGBColorSpace
+    const reducedMotion = prefersReducedMotion()
+    const maybeRenderer = createRenderer()
+    // No WebGL: the hero keeps its glow and chips without the 3D scene.
+    if (!maybeRenderer) return
+    const renderer = maybeRenderer
     host.appendChild(renderer.domElement)
+    const fixed = tonesKey ? tonesKey.split(',').map((tone) => (tone === '-' ? null : tone as TileTone)) : null
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100)
     camera.position.set(0, 0, 7.6)
-
-    scene.add(new THREE.AmbientLight(0xffffff, 1.6))
-    const key = new THREE.DirectionalLight(0xffffff, 2.2)
-    key.position.set(3, 4, 6)
-    scene.add(key)
-    const rim = new THREE.PointLight(0xffffff, 18, 20)
-    rim.position.set(-4, -2, 3)
-    scene.add(rim)
-
+    const rim = addStudioLights(scene, 0xffffff)
     const world = new THREE.Group()
     scene.add(world)
 
     // Neuron-like network behind the tiles.
-    const nodes: THREE.Vector3[] = Array.from({ length: NODE_COUNT }, () => {
+    const nodes = Array.from({ length: NODE_COUNT }, () => {
       const v = new THREE.Vector3().randomDirection().multiplyScalar(3.2 + Math.random() * 1.6)
       v.z -= 1.5
       return v
     })
-    const pointsGeometry = new THREE.BufferGeometry().setFromPoints(nodes)
     const pointsMaterial = new THREE.PointsMaterial({ size: 0.07, transparent: true, opacity: 0.9, depthWrite: false })
     const network = new THREE.Group()
-    network.add(new THREE.Points(pointsGeometry, pointsMaterial))
+    network.add(new THREE.Points(new THREE.BufferGeometry().setFromPoints(nodes), pointsMaterial))
     const linePositions: number[] = []
     nodes.forEach((a, i) => nodes.slice(i + 1).forEach((b) => {
       if (a.distanceTo(b) < 1.55) linePositions.push(a.x, a.y, a.z, b.x, b.y, b.z)
@@ -91,69 +65,49 @@ export function HeroScene() {
     network.add(new THREE.LineSegments(linesGeometry, linesMaterial))
     world.add(network)
 
-    // Tiles: a neutral front face and a coloured back face, flipped around X like Wordle.
-    const boxGeometry = new RoundedBoxGeometry(1, 1, 0.24, 4, 0.12)
-    const faceGeometry = new THREE.PlaneGeometry(0.94, 0.94)
-    const boxMaterial = new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.1 })
-    const tiles = LETTERS.map((letter, index) => {
-      const pivot = new THREE.Group()
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      pivot.position.set((col - 1) * 1.18, (0.5 - row) * 1.18, 0)
-      pivot.add(new THREE.Mesh(boxGeometry, boxMaterial))
-      const faces = [0, 1].map((side) => {
-        const canvas = document.createElement('canvas')
-        canvas.width = canvas.height = 256
-        const texture = new THREE.CanvasTexture(canvas)
-        texture.colorSpace = THREE.SRGBColorSpace
-        texture.anisotropy = 4
-        const mesh = new THREE.Mesh(faceGeometry, new THREE.MeshBasicMaterial({ map: texture, transparent: true }))
-        mesh.position.z = side === 0 ? 0.125 : -0.125
-        if (side === 1) mesh.rotation.x = Math.PI
-        pivot.add(mesh)
-        return { canvas, texture }
-      })
-      world.add(pivot)
-      return { letter, pivot, faces, phase: Math.random() * Math.PI * 2 }
+    const tiles = LETTERS.map((_, index) => {
+      const tile = createTile()
+      tile.pivot.position.set((index % 3 - 1) * 1.18, (0.5 - Math.floor(index / 3)) * 1.18, 0)
+      world.add(tile.pivot)
+      return tile
     })
 
     let palette = readPalette()
+    const confetti = createConfetti(palette)
+    world.add(confetti.mesh)
     let round = reducedMotion ? ROUNDS.length - 1 : 0
-    function paintFront() {
-      tiles.forEach((tile) => {
-        drawFace(tile.faces[0].canvas, tile.letter, palette.tile, palette.text)
-        tile.faces[0].texture.needsUpdate = true
-      })
-    }
+    const toneAt = (index: number) => (fixed ? fixed[index] : ROUNDS[round][index])
     function paintBack() {
       tiles.forEach((tile, index) => {
-        const tone = ROUNDS[round][index]
-        drawFace(tile.faces[1].canvas, tile.letter, palette[tone], '#ffffff')
-        tile.faces[1].texture.needsUpdate = true
+        const tone = toneAt(index)
+        tile.paint('back', LETTERS[index], tone ? toneColor(palette, tone) : palette.tile, '#ffffff')
       })
     }
     function applyPalette() {
       palette = readPalette()
-      boxMaterial.color.set(palette.tile)
+      tiles.forEach((tile, index) => {
+        tile.setBodyColor(palette.tile)
+        tile.paint('front', LETTERS[index], palette.tile, palette.text)
+      })
       pointsMaterial.color.set(palette.accent)
       linesMaterial.color.set(palette.accent)
       rim.color.set(palette.accent)
-      paintFront()
       paintBack()
     }
     applyPalette()
-    document.fonts?.load('700 150px "Bricolage Grotesque"').then(applyPalette).catch(() => undefined)
+    loadDisplayFont().then(applyPalette)
+    const stopThemeWatch = onThemeChange(applyPalette)
 
-    const themeObserver = new MutationObserver(applyPalette)
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-
-    // Timeline: flip in (staggered) → hold → flip out → next round.
+    // Loop timeline: flip in (staggered) → hold → flip out → next round. Fixed results flip in once.
     const cycle = FLIP_MS + STAGGER_MS * (tiles.length - 1)
     const roundLength = cycle * 2 + HOLD_MS * 2
-    let roundStart = performance.now()
+    const solvedToday = Boolean(fixed?.every((tone) => tone === 'ok'))
+    let roundStart = performance.now() + (fixed ? 450 : 0)
+    let celebrated = false
     function tileAngle(index: number, elapsed: number) {
+      if (fixed && !fixed[index]) return 0
       const local = (t: number) => Math.min(1, Math.max(0, (t - index * STAGGER_MS) / FLIP_MS))
-      if (elapsed < cycle + HOLD_MS) return easeInOut(local(elapsed)) * Math.PI
+      if (fixed || elapsed < cycle + HOLD_MS) return easeInOut(local(elapsed)) * Math.PI
       return Math.PI + easeInOut(local(elapsed - cycle - HOLD_MS)) * Math.PI
     }
 
@@ -163,33 +117,27 @@ export function HeroScene() {
     }
     window.addEventListener('pointermove', onPointerMove, { passive: true })
 
-    function resize() {
-      const { width, height } = host.getBoundingClientRect()
-      if (!width || !height) return
+    const host$ = trackHost(host, (width, height) => {
       renderer.setSize(width, height, false)
       camera.aspect = width / height
       camera.position.z = width / height < 0.9 ? 9.4 : 7.6
       camera.updateProjectionMatrix()
-    }
-    const resizeObserver = new ResizeObserver(resize)
-    resizeObserver.observe(host)
-    resize()
-
-    let visible = true
-    const visibilityObserver = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting })
-    visibilityObserver.observe(host)
+    })
 
     let frame = 0
+    let last = performance.now()
     function render(now: number) {
       frame = requestAnimationFrame(render)
-      if (!visible || document.hidden) return
+      const dt = Math.min(0.05, (now - last) / 1000)
+      last = now
+      if (!host$.isVisible()) return
       const t = now / 1000
 
       if (reducedMotion) {
-        tiles.forEach((tile) => { tile.pivot.rotation.x = Math.PI })
+        tiles.forEach((tile, index) => { tile.pivot.rotation.x = fixed && !fixed[index] ? 0 : Math.PI })
       } else {
         let elapsed = now - roundStart
-        if (elapsed > roundLength) {
+        if (!fixed && elapsed > roundLength) {
           round = (round + 1) % ROUNDS.length
           paintBack()
           roundStart = now
@@ -199,6 +147,11 @@ export function HeroScene() {
           tile.pivot.rotation.x = tileAngle(index, elapsed)
           tile.pivot.position.z = Math.sin(t * 1.3 + tile.phase) * 0.08
         })
+        if (solvedToday && !celebrated && elapsed > cycle + 150) {
+          celebrated = true
+          confetti.burst(new THREE.Vector3(0, -0.4, 0.6))
+        }
+        confetti.update(dt)
         network.rotation.y = t * 0.05
         network.rotation.x = Math.sin(t * 0.2) * 0.08
       }
@@ -213,22 +166,15 @@ export function HeroScene() {
     return () => {
       cancelAnimationFrame(frame)
       window.removeEventListener('pointermove', onPointerMove)
-      themeObserver.disconnect()
-      resizeObserver.disconnect()
-      visibilityObserver.disconnect()
-      tiles.forEach((tile) => tile.faces.forEach((face) => face.texture.dispose()))
-      scene.traverse((object) => {
-        if (object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.LineSegments) {
-          object.geometry.dispose()
-          const materials = Array.isArray(object.material) ? object.material : [object.material]
-          materials.forEach((material) => material.dispose())
-        }
-      })
+      stopThemeWatch()
+      host$.disconnect()
+      tiles.forEach((tile) => tile.dispose())
+      confetti.dispose()
+      disposeScene(scene)
       renderer.dispose()
       renderer.domElement.remove()
     }
-  }, [])
+  }, [tonesKey])
 
   return <div ref={hostRef} className="hero-scene-canvas" aria-hidden="true" />
 }
-

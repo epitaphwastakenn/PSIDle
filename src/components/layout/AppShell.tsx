@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 import { hasSeenTutorial, markTutorialSeen } from '../../lib/storage'
 import { applyThemeToDocument, getSavedTheme, saveTheme, type ThemeMode } from '../../lib/theme'
 import { HowToPlay } from '../common/HowToPlay'
+import { LevelUpOverlay } from '../common/LevelUpOverlay'
 import { Footer } from './Footer'
 import { Navbar } from './Navbar'
 
@@ -55,6 +56,7 @@ export function AppShell({ children }: PropsWithChildren) {
     <div className="app-root">
       <Navbar theme={theme} onToggleTheme={handleToggleTheme} onHelp={() => setHelpOpen(true)} />
       <HowToPlay open={helpOpen || (onGameRoute && !tutorialSeen)} onClose={handleCloseHelp} />
+      <LevelUpOverlay />
       <main id="main-content" tabIndex={-1} key={`${location.pathname}${location.search}`} className="page-motion page-shell">
         {children}
       </main>

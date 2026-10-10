@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom'
 import { Icon } from '../components/common/Icon'
 import { XPBar } from '../components/common/XPBar'
 import { audioManager } from '../lib/audio'
+import { findDisorder } from '../data/disorders'
 import { findDailyAttempt, getTodayKey } from '../lib/daily'
+import { getGuessTone } from '../lib/feedback'
+import type { TileTone } from '../lib/three/kit'
 import { getDueReviewItems } from '../lib/review'
 import { ensureDailyTasksForToday, getActiveSession, getReviewItems, getUserProgress } from '../lib/storage'
 import { generateDailyTasks } from '../lib/taskEngine'
@@ -15,6 +18,11 @@ export function HomePage() {
   const [tasks] = useState(() => ensureDailyTasksForToday(() => generateDailyTasks(new Date())))
   const due = getDueReviewItems(getReviewItems()).length
   const daily = findDailyAttempt(progress.attempts, getTodayKey())
+  const dailyDisorder = daily && findDisorder(daily.correctDisorderId)
+  // The hero mirrors today's result: all green when solved, the real guess colours when missed.
+  const heroTones: Array<TileTone | null> | undefined = daily && dailyDisorder
+    ? (daily.solved ? Array.from({ length: 6 }, () => 'ok' as const) : Array.from({ length: 6 }, (_, index) => daily.guesses[index] ? getGuessTone(daily.guesses[index], dailyDisorder) : null))
+    : undefined
   const practice = getActiveSession('practice')
   const solved = progress.attempts.filter((attempt) => attempt.solved).length
   const doneTasks = tasks.filter((task) => task.completed).length
@@ -44,9 +52,9 @@ export function HomePage() {
         </div>
         <div className="hero-visual">
           <div className="hero-glow" aria-hidden="true" />
-          <Suspense fallback={null}><HeroScene /></Suspense>
-          <div className="hero-chip hero-chip-a" aria-hidden="true"><span className="tile tile-xs tile-warn" />Nova pista</div>
-          <div className="hero-chip hero-chip-b" aria-hidden="true"><span className="tile tile-xs tile-ok" />Resolvido · +180 XP</div>
+          <Suspense fallback={null}><HeroScene finalTones={heroTones} /></Suspense>
+          <div className="hero-chip hero-chip-a" aria-hidden="true">{daily ? <><span className={`tile tile-xs ${daily.solved ? "tile-ok" : "tile-bad"}`} />Hoje · {daily.solved ? daily.guesses.length : "X"}/5</> : <><span className="tile tile-xs tile-warn" />Nova pista</>}</div>
+          <div className="hero-chip hero-chip-b" aria-hidden="true">{daily ? <><span className="tile tile-xs tile-ok" />{daily.score} pontos · +{daily.xpGained ?? 0} XP</> : <><span className="tile tile-xs tile-ok" />Resolvido · +180 XP</>}</div>
         </div>
       </section>
 

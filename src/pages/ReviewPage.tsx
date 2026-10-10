@@ -6,7 +6,7 @@ import { RewardToast } from '../components/common/RewardToast'
 import type { RewardToastVariant } from '../components/common/RewardToast'
 import { ReviewCard } from '../components/review/ReviewCard'
 import { approvedCases } from '../data/cases'
-import { disorders } from '../data/disorders'
+import { findDisorder } from '../data/disorders'
 import { applyAchievementUnlocks } from '../lib/achievementEngine'
 import { audioManager } from '../lib/audio'
 import { awardCoins, awardXp } from '../lib/rewards'
@@ -55,7 +55,7 @@ export function ReviewPage() {
     ? approvedCases.find((item) => item.id === currentItem.caseId) ?? currentItem.caseSnapshot
     : undefined
   const correctDisorder = currentItem
-    ? disorders.find((disorder) => disorder.id === currentItem.correctDisorderId)
+    ? findDisorder(currentItem.correctDisorderId)
     : undefined
   const totalItems = items.length
   const masteredItems = items.filter((item) => item.status === 'mastered').length
@@ -198,7 +198,7 @@ function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
   const [search, setSearch] = useState('')
   const filtered = items.filter((item) => {
     const caseData = approvedCases.find((entry) => entry.id === item.caseId) ?? item.caseSnapshot
-    const disorder = disorders.find((entry) => entry.id === item.correctDisorderId)
+    const disorder = findDisorder(item.correctDisorderId)
     return normalizeText(`${caseData?.title} ${caseData?.category} ${disorder?.namePt}`).includes(normalizeText(search))
   })
   if (!items.length) {
@@ -219,7 +219,7 @@ function ReviewedCasesList({ items }: { items: ReviewItem[] }) {
       <section className="history-grid">
         {filtered.map((item) => {
           const caseData = approvedCases.find((caseItem) => caseItem.id === item.caseId) ?? item.caseSnapshot
-          const correctDisorder = disorders.find((disorder) => disorder.id === item.correctDisorderId)
+          const correctDisorder = findDisorder(item.correctDisorderId)
           const cluesUsed = Math.max(0, item.originalCluesUsed ?? 0)
           const usedClues = caseData?.clues.slice(0, cluesUsed) ?? []
           const lastCorrect = item.reviewHistory?.[0]?.correct

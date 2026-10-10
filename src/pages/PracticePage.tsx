@@ -6,7 +6,7 @@ import { audioManager } from '../lib/audio'
 import { generatePracticeProceduralCase } from '../lib/proceduralCases'
 import { getActiveSession, getPracticeSelection, getUserProgress, savePracticeSelection } from '../lib/storage'
 import { difficultyLabels, getPracticePool, selectPracticeDisorder } from '../lib/study'
-import type { Case } from '../types/models'
+import type { Case, Difficulty } from '../types/models'
 
 function createPracticeCase(selection: ReturnType<typeof getPracticeSelection>): Case | null {
   const { attempts } = getUserProgress()
@@ -20,7 +20,9 @@ function createPracticeCase(selection: ReturnType<typeof getPracticeSelection>):
   if (!disorder) return null
   const recentCases = attempts.flatMap((attempt) => attempt.caseSnapshot ? [attempt.caseSnapshot] : [])
   if (current) recentCases.push(current.caseData)
-  return generatePracticeProceduralCase({ disorderId: disorder.id, seed: crypto.randomUUID(), recentCases })
+  // The difficulty filter is the level of the written case; "all" lets the generator pick one.
+  const level = selection.difficulty === 'all' ? undefined : selection.difficulty as Difficulty
+  return generatePracticeProceduralCase({ disorderId: disorder.id, level, seed: crypto.randomUUID(), recentCases })
 }
 
 export function PracticePage() {

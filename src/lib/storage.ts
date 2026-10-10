@@ -1,3 +1,4 @@
+import { isPlayableDisorder } from '../data/disorders'
 import { getTodayKey } from './daily'
 import { canonicalCategory } from './study'
 import type { ActiveSession, DailyTask, ReviewItem, UserProgress } from '../types/models'
@@ -62,8 +63,15 @@ export function saveUserProgress(progress: UserProgress): void {
     return
   }
 
+  const previousLevel = getUserProgress().level
   window.localStorage.setItem(KEYS.progress, JSON.stringify(progress))
+  if (progress.level > previousLevel) {
+    window.dispatchEvent(new CustomEvent<number>(LEVEL_UP_EVENT, { detail: progress.level }))
+  }
 }
+
+/** Fired on `window` whenever saved progress reaches a higher level; `detail` is the new level. */
+export const LEVEL_UP_EVENT = 'psidle:level-up'
 
 export function getDailyTasks(): DailyTask[] {
   if (!isBrowserReady()) {
@@ -127,7 +135,9 @@ function getSessionKey(mode: ActiveSession['mode'], caseDate?: string): string {
 /** Pass `caseDate` to read the in-progress session of a past daily case from the archive. */
 export function getActiveSession(mode: ActiveSession['mode'], caseDate?: string): ActiveSession | null {
   const session = safeParse<ActiveSession | null>(localStorage.getItem(getSessionKey(mode, caseDate)), null)
-  return session && (mode !== 'daily' || caseDate || session.date === getTodayKey()) ? session : null
+  // Cases from the old generator are dropped so in-progress games restart with a rewritten case.
+  if (!session || !session.caseData.tags?.includes('authored_v3') || !isPlayableDisorder(session.caseData.correctDisorderId)) return null
+  return mode !== 'daily' || caseDate || session.date === getTodayKey() ? session : null
 }
 
 export function saveActiveSession(session: ActiveSession): void {
@@ -177,5 +187,24 @@ export function markTutorialSeen(): void {
     localStorage.setItem(TUTORIAL_KEY, '1')
   } catch {
     // Storage unavailable: the tutorial will simply show again next visit.
+  }
+}
+
+const SEEN_ACHIEVEMENTS_KEY = `${STORAGE_PREFIX}:achievements-seen`
+
+/** Achievement ids the player has already seen on the profile, used to animate new unlocks once. */
+export function getSeenAchievements(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(SEEN_ACHIEVEMENTS_KEY) ?? 'null') ?? []
+  } catch {
+    return []
+  }
+}
+
+export function markAchievementsSeen(ids: string[]): void {
+  try {
+    localStorage.setItem(SEEN_ACHIEVEMENTS_KEY, JSON.stringify(ids))
+  } catch {
+    // Storage unavailable: new-unlock animations will simply replay.
   }
 }

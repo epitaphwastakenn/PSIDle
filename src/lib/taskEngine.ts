@@ -1,6 +1,6 @@
 import { disorderCategories } from '../data/disorders'
 import { taskTemplates } from '../data/tasks'
-import { normalizeText } from './normalize'
+import { canonicalCategory } from './study'
 import type { DailyTask, Difficulty, TaskTemplate } from '../types/models'
 
 export type TaskEvent =
@@ -149,7 +149,7 @@ export function updateTaskProgress(tasks: DailyTask[], event: TaskEvent): DailyT
         increment = 1
       }
 
-      if (task.type === 'solve_category' && event.solved && normalizeText(task.targetCategory ?? '') === normalizeText(event.category)) {
+      if (task.type === 'solve_category' && event.solved && canonicalCategory(task.targetCategory) === canonicalCategory(event.category)) {
         increment = 1
       }
 

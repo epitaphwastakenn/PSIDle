@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
+import type { GuessTone } from '../../lib/feedback'
 import { FeedbackBurst } from '../common/FeedbackBurst'
 import { Icon } from '../common/Icon'
 import { DifferentialList } from './DifferentialList'
 import { NextCaseCountdown } from './NextCaseCountdown'
+
+const ResultReveal = lazy(() => import('./ResultReveal').then((module) => ({ default: module.ResultReveal })))
 
 interface ResultPanelProps {
   solved: boolean
@@ -17,7 +20,11 @@ interface ResultPanelProps {
   addedToReview: boolean
   explanationReviewed: boolean
   onShare?: () => void
+  onShareImage?: () => void
   showCountdown?: boolean
+  tones: GuessTone[]
+  slots: number
+  reference?: { label: string; url: string }
 }
 
 /** How long the explanation must stay on screen before it counts as read. */
@@ -36,7 +43,11 @@ export function ResultPanel({
   addedToReview,
   explanationReviewed,
   onShare,
+  onShareImage,
   showCountdown = false,
+  tones,
+  slots,
+  reference,
 }: ResultPanelProps) {
   const answerRef = useRef<HTMLDivElement>(null)
   const onReadRef = useRef(onReviewExplanation)
@@ -76,6 +87,8 @@ export function ResultPanel({
         {showCountdown && <NextCaseCountdown />}
       </div>
 
+      <Suspense fallback={<div className="result-reveal" />}><ResultReveal tones={tones} slots={slots} solved={solved} /></Suspense>
+
       <div ref={answerRef} className="card-muted answer-box">
         <div className="flex items-center justify-between gap-3">
           <p className="kicker">Resposta</p>
@@ -83,6 +96,11 @@ export function ResultPanel({
         </div>
         <p className="answer-name">{correctDisorderName}</p>
         <p className="explain">{explanation}</p>
+        {reference && (
+          <a className="reference-link" href={reference.url} target="_blank" rel="noreferrer">
+            <Icon name="book" width="15" height="15" />Referência: {reference.label}
+          </a>
+        )}
       </div>
 
       <div className="result-stats">
@@ -97,6 +115,11 @@ export function ResultPanel({
         {onShare && (
           <button type="button" onClick={onShare} className="btn btn-primary">
             <Icon name="share" width="18" height="18" />Compartilhar
+          </button>
+        )}
+        {onShareImage && (
+          <button type="button" onClick={onShareImage} className="btn btn-secondary">
+            <Icon name="image" width="18" height="18" />Imagem
           </button>
         )}
         <button type="button" onClick={onAddToReview} disabled={addedToReview} className="btn btn-ghost">

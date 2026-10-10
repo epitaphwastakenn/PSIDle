@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { disorders } from '../src/data/disorders.ts'
+import { levelsFor } from '../src/lib/caseLevels.ts'
 import { getPracticePool, selectPracticeDisorder } from '../src/lib/study.ts'
 import { generateDailyProceduralCase, generatePracticeProceduralCase } from '../src/lib/proceduralCases.ts'
 import { addReviewItem, getDueReviewItems, gradeReviewItem } from '../src/lib/review.ts'
@@ -11,10 +12,12 @@ import type { Attempt } from '../src/types/models.ts'
 
 test('selection respects category and difficulty with no silent broadening', () => {
   for (const disorder of disorders) {
-    const pool = getPracticePool(disorder.category, disorder.difficulty)
-    const chosen = selectPracticeDisorder({ pool, attempts: [], servedIds: [], adaptive: true, random: () => .5 })!
-    assert.equal(chosen.category, disorder.category)
-    assert.equal(chosen.difficulty, disorder.difficulty)
+    for (const level of levelsFor(disorder)) {
+      const pool = getPracticePool(disorder.category, level)
+      const chosen = selectPracticeDisorder({ pool, attempts: [], servedIds: [], adaptive: true, random: () => .5 })!
+      assert.equal(chosen.category, disorder.category)
+      assert.ok(levelsFor(chosen).includes(level), `${chosen.id} sem casos ${level}`)
+    }
   }
   assert.equal(selectPracticeDisorder({ pool: [], attempts: [], servedIds: [], adaptive: true }), undefined)
 })
@@ -49,7 +52,7 @@ test('daily is reproducible and procedural cases match the selected disorder', (
     const generated = generatePracticeProceduralCase({ disorderId: disorder.id, seed: 'coverage' })
     assert.equal(generated.correctDisorderId, disorder.id)
     assert.equal(generated.category, disorder.category)
-    assert.equal(generated.difficulty, disorder.difficulty)
+    assert.ok(levelsFor(disorder).includes(generated.difficulty), disorder.id)
     assert.ok(generated.vignette.length > 100)
     assert.equal(generated.clues.length, 4)
     assert.ok(generated.clues.every((clue) => clue.text.length > 20), disorder.id)

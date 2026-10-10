@@ -1,15 +1,16 @@
+import { caseSets } from '../data/cases/index'
+import { femaleNames, maleNames } from '../data/casePeople'
 import { disorders } from '../data/disorders'
-import { caseProfiles, dailyExcludedIds } from '../data/caseProfiles'
-import { firstNames, lastNames } from '../data/casePeople'
 import type { Case, CaseClue, Difficulty, Disorder } from '../types/models'
+import { getDailyLevel, levelsFor } from './caseLevels'
+import { expandCaseText } from './caseText'
 
 interface GenerationFilters {
   disorderId?: string
   category?: string
-  difficulty?: Difficulty
+  /** Abstraction level of the vignette (the difficulty shown); picked at random when omitted. */
+  level?: Difficulty
   excludeDisorderIds?: string[]
-  /** Restrict to entries suited to the daily case (no classification-level subtypes). */
-  dailyOnly?: boolean
 }
 
 interface GenerateProceduralCaseInput extends GenerationFilters {
@@ -19,11 +20,12 @@ interface GenerateProceduralCaseInput extends GenerationFilters {
 }
 
 const titles = [
-  'Um novo relato', 'Entre compromissos', 'Um recorte do cotidiano',
-  'Na conversa de hoje', 'O que mudou', 'Além da primeira impressão',
-  'Um olhar mais atento', 'Entre uma semana e outra',
+  'Um novo relato', 'Entre compromissos', 'Um recorte do cotidiano', 'Na conversa de hoje', 'O que mudou',
+  'Além da primeira impressão', 'Um olhar mais atento', 'Entre uma semana e outra', 'Na sala de espera',
+  'O que a família conta', 'Sinais pelo caminho', 'Uma história em partes', 'Antes da consulta', 'Por trás da queixa',
 ]
-const clueTypes: CaseClue['type'][] = ['symptoms', 'impairment', 'exclusion', 'differential']
+// Clues are authored in this fixed order (see src/data/cases/types.ts).
+const clueTypes: CaseClue['type'][] = ['symptoms', 'duration', 'impairment', 'exclusion']
 
 function hashSeed(seed: string | number): number {
   let hash = 2166136261
@@ -51,60 +53,66 @@ function chooseDisorder(rng: () => number, filters: GenerationFilters): Disorder
   if (filters.disorderId) {
     const selected = disorders.find((item) => item.id === filters.disorderId)
     if (!selected) throw new Error(`Transtorno desconhecido: ${filters.disorderId}`)
+    if (!levelsFor(selected).length) throw new Error(`Ainda não há casos escritos para ${filters.disorderId}`)
     return selected
   }
   const pool = disorders.filter((item) =>
     (!filters.category || item.category === filters.category) &&
-    (!filters.difficulty || item.difficulty === filters.difficulty) &&
-    (!filters.dailyOnly || !dailyExcludedIds.has(item.id)),
+    levelsFor(item).length > 0 &&
+    (!filters.level || levelsFor(item).includes(filters.level)),
   )
   if (!pool.length) throw new Error('Não há casos para esta combinação de filtros.')
   const unseen = pool.filter((item) => !filters.excludeDisorderIds?.includes(item.id))
   const candidates = unseen.length ? unseen : pool
+  // Balance families first, so large families do not dominate the draw.
   const category = pickOne([...new Set(candidates.map((item) => item.category))], rng)
   return pickOne(candidates.filter((item) => item.category === category), rng)
 }
 
-function choosePresentation(disorderId: string, recentCases: readonly Case[], rng: () => number): number {
-  const indices = caseProfiles[disorderId].situations.map((_, index) => index)
-  const seen = recentCases
+/** Picks a variant of the level, rotating away from the ones recently served for this diagnosis. */
+function chooseVariant(disorderId: string, level: Difficulty, recentCases: readonly Case[], rng: () => number): number {
+  const indices = caseSets[disorderId].variants.flatMap((variant, index) => (variant.level === level ? [index] : []))
+  const recent = recentCases
     .filter((item) => item.correctDisorderId === disorderId)
-    .flatMap((item) => item.tags.filter((tag) => tag.startsWith('presentation_')))
-    .map((tag) => Number(tag.slice('presentation_'.length)))
+    .flatMap((item) => item.tags.filter((tag) => tag.startsWith('variant_')))
+    .map((tag) => Number(tag.slice('variant_'.length)))
     .filter((index) => indices.includes(index))
     .reverse()
-  const recent = [...new Set(seen)].slice(0, indices.length - 1)
-  return pickOne(indices.filter((index) => !recent.includes(index)), rng)
+  const avoid = [...new Set(recent)].slice(0, indices.length - 1)
+  return pickOne(indices.filter((index) => !avoid.includes(index)), rng)
 }
 
 function buildProceduralCase(input: GenerateProceduralCaseInput): Case {
   const disorder = chooseDisorder(createRng(input.seed), input)
-  const profile = caseProfiles[disorder.id]
+  const set = caseSets[disorder.id]
+  const levels = levelsFor(disorder)
+  const level = input.level && levels.includes(input.level) ? input.level : pickOne(levels, createRng(`${input.seed}:level`))
+  const variantIndex = chooseVariant(disorder.id, level, input.recentCases ?? [], createRng(`${input.seed}:${disorder.id}:variant`))
+  const variant = set.variants[variantIndex]
+
   const identityRng = createRng(`${input.seed}:${disorder.id}:identity`)
-  const contentRng = createRng(`${input.seed}:${disorder.id}:content`)
-  const [minAge, maxAge] = disorder.caseAgeRange ?? profile.ageRange
+  const sex = variant.sex ?? (identityRng() < 0.5 ? 'f' : 'm')
+  const name = pickOne(sex === 'f' ? femaleNames : maleNames, identityRng)
+  const [minAge, maxAge] = variant.ages
   const age = minAge + Math.floor(identityRng() * (maxAge - minAge + 1))
-  const name = `${pickOne(firstNames, identityRng)} ${pickOne(lastNames, identityRng)}`
-  const presentation = choosePresentation(disorder.id, input.recentCases ?? [], contentRng)
-  const id = `${input.caseIdPrefix}-v2-${disorder.id}-${hashSeed(input.seed).toString(36)}-p${presentation}`
-  const comparison = disorders.find((item) => item.id === profile.differential.disorderId)!
-  // The last clue names a close alternative without explaining it; the reasoning stays in the result.
-  const clueTexts = [...profile.details, `Um diagnóstico próximo que vale descartar: ${comparison.namePt}.`]
+  const person = { name, age, sex } as const
+  const id = `${input.caseIdPrefix}-v3-${disorder.id}-v${variantIndex}-${hashSeed(input.seed).toString(36)}`
 
   return {
     id,
     title: pickOne(titles, createRng(`${input.seed}:title`)),
     category: disorder.category,
-    difficulty: disorder.difficulty,
-    vignette: `${name}, ${age} anos, ${profile.situations[presentation]}\n\n${profile.course} ${profile.distinction}`,
+    difficulty: level,
+    vignette: expandCaseText(variant.text, person),
     correctDisorderId: disorder.id,
-    clues: clueTexts.map((text, index) => ({
-      id: `${id}-clue-${index + 1}`, order: index + 1, type: clueTypes[index], text,
+    clues: variant.clues.map((text, index) => ({
+      id: `${id}-clue-${index + 1}`, order: index + 1, type: clueTypes[index], text: expandCaseText(text, person),
     })),
-    explanation: `Neste caso fictício, a hipótese mais compatível é ${disorder.namePt}. O ponto decisivo: ${profile.distinction} ${profile.course}`,
-    differentials: [{ ...profile.differential }],
-    tags: ['procedural_v2', `presentation_${presentation}`, `idade_${age}`],
-    sourceNote: 'Caso fictício composto com observações educacionais originais. Não é uma avaliação clínica.',
+    explanation: set.explanation,
+    differentials: [{ ...set.differential }],
+    tags: ['authored_v3', `variant_${variantIndex}`, `idade_${age}`, `sexo_${sex}`],
+    sourceNote: 'Caso fictício escrito a partir dos critérios do DSM-5-TR. Não é uma avaliação clínica.',
+    reference: { ...set.reference },
     status: 'approved',
   }
 }
@@ -117,8 +125,8 @@ export function generateDailyProceduralCase(date: Date): Case {
   const dateKey = getDateKey(date)
   return buildProceduralCase({
     seed: `daily-${dateKey}`,
-    dailyOnly: true,
     caseIdPrefix: `proc-daily-${dateKey}`,
+    level: getDailyLevel(date),
   })
 }
 

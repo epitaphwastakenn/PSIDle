@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import type { FormEvent } from 'react'
 import { AchievementGrid } from '../components/profile/AchievementGrid'
 import { DailyStatsCard } from '../components/profile/DailyStatsCard'
@@ -10,11 +10,14 @@ import { getUserProgress, saveUserProgress } from '../lib/storage'
 import { getCategoryStats } from '../lib/study'
 import { Icon } from '../components/common/Icon'
 
+const NeuralMap = lazy(() => import('../components/profile/NeuralMap').then((module) => ({ default: module.NeuralMap })))
+
 export function ProfilePage() {
   const [progress, setProgress] = useState(() => getUserProgress())
   const [nameInput, setNameInput] = useState(progress.displayName ?? '')
   const [nameSaved, setNameSaved] = useState(false)
-  const categoryStats = getCategoryStats(progress.attempts).filter((item) => item.played > 0)
+  const allCategoryStats = getCategoryStats(progress.attempts)
+  const categoryStats = allCategoryStats.filter((item) => item.played > 0)
     .sort((a, b) => a.accuracy - b.accuracy)
   const totalCases = progress.attempts.length
   const dailyCases = progress.attempts.filter((attempt) => attempt.mode === 'daily').length
@@ -59,6 +62,14 @@ export function ProfilePage() {
         </section>
         <LevelCard level={progress.level} xp={progress.xp} coins={progress.coins} streak={progress.streak} />
       </div>
+
+      <section>
+        <div className="section-head">
+          <h2 className="h2">Mapa neural</h2>
+          <span className="small muted">Brilho = acertos · arraste para girar</span>
+        </div>
+        <Suspense fallback={<div className="neural-map" />}><NeuralMap stats={allCategoryStats} /></Suspense>
+      </section>
 
       <ProfileStats totalCases={totalCases} dailyCases={dailyCases} practiceCases={practiceCases} accuracy={accuracy} />
 

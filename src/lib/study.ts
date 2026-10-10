@@ -1,4 +1,5 @@
 import { disorders } from '../data/disorders'
+import { hasCasesFor } from './caseLevels'
 import { normalizeText } from './normalize'
 import type { Attempt, Difficulty, Disorder } from '../types/models'
 
@@ -8,11 +9,17 @@ export function getAttemptDisorderId(attempt: Attempt): string | undefined {
   return attempt.correctDisorderId ?? disorders.find((item) => attempt.caseId.includes(`-${item.id}-`))?.id
 }
 
-/** Maps a stored category (possibly saved before accents were fixed) to the current catalogue name. */
+/** Families merged into "Substâncias e Comportamentos Aditivos" (one DSM-5-TR chapter). */
+const MERGED_CATEGORIES: Record<string, string> = {
+  'uso de substancias': 'Substâncias e Comportamentos Aditivos',
+  'comportamentos aditivos': 'Substâncias e Comportamentos Aditivos',
+}
+
+/** Maps a stored category (saved before accents were fixed or families merged) to the current catalogue name. */
 export function canonicalCategory(value: string | undefined): string | undefined {
   if (!value) return undefined
   const key = normalizeText(value)
-  return disorders.find((item) => normalizeText(item.category) === key)?.category ?? value
+  return MERGED_CATEGORIES[key] ?? disorders.find((item) => normalizeText(item.category) === key)?.category ?? value
 }
 
 export function getCategoryStats(attempts: Attempt[]) {
@@ -24,9 +31,10 @@ export function getCategoryStats(attempts: Attempt[]) {
   })
 }
 
+/** Diagnoses that can be served for the chosen family and difficulty (difficulty = level of the written case). */
 export function getPracticePool(category: string, difficulty: string): Disorder[] {
   return disorders.filter((item) => (category === 'all' || item.category === category) &&
-    (difficulty === 'all' || item.difficulty === difficulty))
+    hasCasesFor(item, difficulty === 'all' ? undefined : difficulty as Difficulty))
 }
 
 export function selectPracticeDisorder(input: {

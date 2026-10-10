@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { getSeenAchievements, markAchievementsSeen } from '../../lib/storage'
 import type { Achievement } from '../../types/models'
 import { Icon } from '../common/Icon'
 
@@ -11,6 +13,12 @@ const symbols = ['spark', 'calendar', 'book', 'check', 'flame', 'chart', 'medal'
 export function AchievementGrid({ achievements, unlockedIds }: AchievementGridProps) {
   const unlocked = new Set(unlockedIds)
   const unlockedCount = achievements.filter((achievement) => unlocked.has(achievement.id)).length
+  // Medals unlocked since the last visit spin once to celebrate.
+  const [fresh] = useState(() => new Set(unlockedIds.filter((id) => !getSeenAchievements().includes(id))))
+
+  useEffect(() => {
+    markAchievementsSeen(unlockedIds)
+  }, [unlockedIds])
 
   return (
     <section>
@@ -23,8 +31,9 @@ export function AchievementGrid({ achievements, unlockedIds }: AchievementGridPr
           const isUnlocked = unlocked.has(achievement.id)
           return (
             <article key={achievement.id} className={`card achievement-card ${isUnlocked ? '' : 'achievement-locked'}`}>
-              <span className={`tile ${isUnlocked ? 'tile-accent' : 'tile-filled'}`} aria-label={isUnlocked ? 'Conquistada' : 'Bloqueada'}>
-                <Icon name={isUnlocked ? symbols[index % symbols.length] : 'lock'} />
+              <span className={`medal${isUnlocked ? ' medal-on' : ''}${fresh.has(achievement.id) ? ' medal-new' : ''}`} aria-label={isUnlocked ? 'Conquistada' : 'Bloqueada'}>
+                <span className="medal-face medal-front"><Icon name={isUnlocked ? symbols[index % symbols.length] : 'lock'} /></span>
+                <span className="medal-face medal-back">ψ</span>
               </span>
               <h3>{achievement.title}</h3>
               <p>{achievement.description}</p>

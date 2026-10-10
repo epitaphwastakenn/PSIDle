@@ -900,6 +900,9 @@ h1, h2, h3, h4 { color: var(--text); }
 .answer-box { position: relative; z-index: 1; margin-top: 22px; padding: 20px; }
 .answer-name { margin-top: 6px; font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.1; letter-spacing: -0.03em; color: var(--text); }
 .answer-box p.explain { margin-top: 12px; font-size: 15px; line-height: 1.7; color: var(--text-2); }
+.reference-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 13px; color: var(--text-3); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.reference-link:hover { color: var(--accent-text); }
+.reference-link svg { flex-shrink: 0; }
 
 .result-stats { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
 .result-stats .card-muted { padding: 14px 16px; }
@@ -1162,24 +1165,128 @@ h1, h2, h3, h4 { color: var(--text); }
   100% { opacity: 0; transform: translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(1) rotate(var(--burst-rotate)); }
 }
 
-/* ───────────────────────── Archive ───────────────────────── */
+/* ───────────────────────── Archive (flip cards) ───────────────────────── */
 
 .archive-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; }
 
-.archive-day {
-  display: grid;
-  justify-items: start;
-  gap: 2px;
-  padding: 16px;
-  min-height: 132px;
+.archive-day { display: block; height: 136px; perspective: 700px; border-radius: var(--radius-lg); }
+.archive-flip {
+  position: relative;
+  display: block;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 560ms cubic-bezier(0.34, 1.4, 0.64, 1);
 }
-.archive-day .tile { position: absolute; top: 14px; right: 14px; }
+.archive-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.archive-front { justify-items: start; align-content: start; gap: 2px; padding: 16px; }
+.archive-front .tile { position: absolute; top: 14px; right: 14px; }
+.archive-back { transform: rotateY(180deg); place-items: center; align-content: center; gap: 6px; text-align: center; background: var(--surface-2); }
+.archive-back strong { font-family: var(--font-display); font-size: 18px; color: var(--text); }
 .archive-weekday, .archive-month { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
-.archive-date { margin-top: auto; font-size: 40px; font-weight: 700; line-height: 1; color: var(--text); }
-.archive-open { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.archive-date { margin-top: 18px; font-size: 40px; font-weight: 700; line-height: 1; color: var(--text); }
+.archive-open .archive-front { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 .archive-open .archive-weekday { color: var(--accent-text); }
-.archive-solved, .archive-failed { background: var(--surface-2); box-shadow: none; }
+.archive-solved .archive-front, .archive-failed .archive-front { background: var(--surface-2); box-shadow: none; }
 .archive-solved .archive-date, .archive-failed .archive-date { color: var(--text-3); }
+.archive-day:focus-visible .archive-flip { transform: rotateY(180deg); }
+
+@media (hover: hover) and (pointer: fine) {
+  .archive-day:hover .archive-flip { transform: rotateY(180deg); }
+}
+
+/* ───────────────────────── 3D scenes ───────────────────────── */
+
+.result-reveal { position: relative; z-index: 1; height: 132px; margin: 18px -12px 0; }
+.result-reveal canvas { display: block; width: 100% !important; height: 100% !important; }
+
+.neural-map { position: relative; height: 440px; border-radius: var(--radius-lg); border: 1px solid var(--line); background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 10%, var(--surface)) 0%, var(--surface) 70%); overflow: hidden; }
+.neural-map-canvas { position: absolute; inset: 0; }
+.neural-map-canvas canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; touch-action: pan-y; }
+.neural-map-canvas canvas:active { cursor: grabbing; }
+.neural-tooltip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-pop);
+  font-size: 13px;
+  color: var(--text-2);
+  pointer-events: none;
+  transform: translate(14px, -50%);
+  white-space: nowrap;
+}
+.neural-tooltip strong { color: var(--text); font-weight: 600; }
+
+.level-up {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+.level-up::backdrop { background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.level-up[open] { animation: pageIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.level-up-content { display: grid; height: 100%; place-items: center; align-content: center; gap: 10px; padding: 24px; text-align: center; }
+.level-up-canvas { width: min(980px, 100vw); height: min(560px, 58vh); margin-bottom: -60px; }
+.level-up-canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+.level-up .display { font-size: clamp(44px, 8vw, 72px); }
+.level-up .btn { margin-top: 10px; }
+
+/* Medals: two faces on a coin that spins in 3D. */
+.medal {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 56px;
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+.medal-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--surface-3);
+  color: var(--text-3);
+  box-shadow: inset 0 0 0 3px var(--line-strong);
+}
+.medal-face svg { width: 24px; height: 24px; }
+.medal-back { transform: rotateY(180deg); font-family: var(--font-display); font-size: 26px; font-weight: 700; }
+.medal-on .medal-face {
+  background:
+    radial-gradient(circle at 30% 25%, #ffffff55, transparent 45%),
+    conic-gradient(from 200deg, var(--accent), var(--ok), var(--accent), color-mix(in srgb, var(--accent) 60%, #000), var(--accent));
+  color: var(--accent-ink);
+  box-shadow: inset 0 0 0 3px #ffffff30, inset 0 -6px 12px #00000040, 0 8px 22px -10px var(--accent);
+}
+.medal-new { animation: medalSpin 1600ms cubic-bezier(0.34, 1.2, 0.64, 1) 300ms both; }
+@media (hover: hover) and (pointer: fine) {
+  .achievement-card:hover .medal-on { transform: rotateY(360deg); }
+}
+@keyframes medalSpin { 0% { transform: rotateY(0) scale(0.6); } 60% { transform: rotateY(720deg) scale(1.15); } 100% { transform: rotateY(720deg) scale(1); } }
 
 /* ───────────────────────── Finishing touches ───────────────────────── */
 
@@ -1416,6 +1523,8 @@ h1, h2, h3, h4 { color: var(--text); }
   .segment { flex: 1; padding: 0 8px; }
   .task-summary { min-width: 0; width: 100%; }
   .daily-stats { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; }
+  .neural-map { height: 340px; }
+  .result-reveal { height: 104px; margin-inline: -8px; }
   .daily-stats-numbers .stat-value { font-size: 26px; }
   .header-actions { gap: 0; }
   .icon-btn { width: 34px; }
@@ -1431,6 +1540,7 @@ h1, h2, h3, h4 { color: var(--text); }
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
   }
-  .feedback-burst, .reward-ready, .hero-glow, .hero-chip { animation: none !important; }
+  .feedback-burst, .reward-ready, .hero-glow, .hero-chip, .medal-new { animation: none !important; }
+  .archive-flip, .medal { transition: none !important; }
   .card-link:hover { transform: none; }
 }
